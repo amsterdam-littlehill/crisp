@@ -1,0 +1,88 @@
+name: Validate
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+    branches: [main, master]
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Check for unreplaced placeholders in templates
+        run: |
+          echo "Checking templates for {{NAME}} or {{PROJECT}} placeholders..."
+          if grep -rn '{{NAME}}\|{{PROJECT}}' templates/; then
+            echo "❌ Found unreplaced placeholders in templates/"
+            exit 1
+          fi
+          echo "✅ No unreplaced placeholders"
+
+      - name: Install scaffold to temp project
+        run: |
+          mkdir /tmp/test-project
+          cd /tmp/test-project
+          bash $GITHUB_WORKSPACE/install.sh --skill test-skill --project test-project
+
+      - name: Run smoke-test
+        run: |
+          cd /tmp/test-project
+          bash .claude/skills/test-skill/scripts/smoke-test.sh test-skill
+
+      - name: Run health-check
+        run: |
+          cd /tmp/test-project
+          python $GITHUB_WORKSPACE/scripts/health-check.py --skill test-skill
+
+      - name: Run token-audit
+        run: |
+          cd /tmp/test-project
+          python $GITHUB_WORKSPACE/scripts/token-audit.py --skill test-skill --report
+
+      - name: Verify benchmark report was generated
+        run: |
+          if [[ -f /tmp/test-project/benchmark-report.json ]]; then
+            echo "✅ benchmark-report.json generated"
+            cat /tmp/test-project/benchmark-report.json
+          else
+            echo "❌ benchmark-report.json missing"
+            exit 1
+          fi
+
+      - name: Test sync-shells dry-run
+        run: |
+          cd /tmp/test-project
+          python $GITHUB_WORKSPACE/scripts/sync-shells.py --skill test-skill --check
+
+      - name: Test install.sh --dry-run
+        run: |
+          mkdir /tmp/dry-run-test
+          cd /tmp/dry-run-test
+          bash $GITHUB_WORKSPACE/install.sh --skill dry-skill --dry-run
+          # Verify no files were actually created
+          if [[ -d .claude ]]; then
+            echo "❌ --dry-run created files"
+            exit 1
+          fi
+          echo "✅ --dry-run respected"
+
+      - name: Test install.sh --shadow
+        run: |
+          mkdir /tmp/shadow-test
+          cd /tmp/shadow-test
+          echo "# Existing CLAUDE.md" > .claude.md
+          bash $GITHUB_WORKSPACE/install.sh --skill shadow-skill --shadow
+          # Verify skill was created
+          if [[ ! -d .claude/skills/shadow-skill ]]; then
+            echo "❌ Shadow mode did not create skill"
+            exit 1
+          fi
+          echo "✅ Shadow mode works"

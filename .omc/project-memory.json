@@ -1,0 +1,225 @@
+{
+  "version": "1.0.0",
+  "lastScanned": 1776954694110,
+  "projectRoot": "D:\\code_space\\crisp",
+  "techStack": {
+    "languages": [],
+    "frameworks": [],
+    "packageManager": null,
+    "runtime": null
+  },
+  "build": {
+    "buildCommand": null,
+    "testCommand": null,
+    "lintCommand": null,
+    "devCommand": null,
+    "scripts": {}
+  },
+  "conventions": {
+    "namingStyle": null,
+    "importStyle": null,
+    "testPattern": null,
+    "fileOrganization": null
+  },
+  "structure": {
+    "isMonorepo": false,
+    "workspaces": [],
+    "mainDirectories": [
+      "docs",
+      "scripts"
+    ],
+    "gitBranches": null
+  },
+  "customNotes": [],
+  "directoryMap": {
+    "docs": {
+      "path": "docs",
+      "purpose": "Documentation",
+      "fileCount": 2,
+      "lastAccessed": 1776954694037,
+      "keyFiles": [
+        "how.md",
+        "two.md"
+      ]
+    },
+    "images": {
+      "path": "images",
+      "purpose": null,
+      "fileCount": 0,
+      "lastAccessed": 1776954694039,
+      "keyFiles": []
+    },
+    "scripts": {
+      "path": "scripts",
+      "purpose": "Build/utility scripts",
+      "fileCount": 4,
+      "lastAccessed": 1776954694041,
+      "keyFiles": [
+        "benchmark.py",
+        "health-check.py",
+        "sync-shells.py",
+        "token-audit.py"
+      ]
+    },
+    "templates": {
+      "path": "templates",
+      "purpose": null,
+      "fileCount": 0,
+      "lastAccessed": 1776954694042,
+      "keyFiles": []
+    }
+  },
+  "hotPaths": [
+    {
+      "path": "README.md",
+      "accessCount": 3,
+      "lastAccessed": 1776956148287,
+      "type": "file"
+    },
+    {
+      "path": "",
+      "accessCount": 2,
+      "lastAccessed": 1776954877007,
+      "type": "directory"
+    },
+    {
+      "path": "scripts\\token-audit.py",
+      "accessCount": 2,
+      "lastAccessed": 1776956065316,
+      "type": "file"
+    },
+    {
+      "path": "scripts\\health-check.py",
+      "accessCount": 2,
+      "lastAccessed": 1776956065451,
+      "type": "file"
+    },
+    {
+      "path": "scripts\\sync-shells.py",
+      "accessCount": 2,
+      "lastAccessed": 1776956065507,
+      "type": "file"
+    },
+    {
+      "path": "benchmark-report.json",
+      "accessCount": 2,
+      "lastAccessed": 1776956114351,
+      "type": "file"
+    },
+    {
+      "path": "ANTI-TEMPLATES.md",
+      "accessCount": 1,
+      "lastAccessed": 1776954831223,
+      "type": "file"
+    },
+    {
+      "path": "README.zh.md",
+      "accessCount": 1,
+      "lastAccessed": 1776954831412,
+      "type": "file"
+    },
+    {
+      "path": "install.sh",
+      "accessCount": 1,
+      "lastAccessed": 1776954846640,
+      "type": "file"
+    },
+    {
+      "path": "templates\\skill\\SKILL.md",
+      "accessCount": 1,
+      "lastAccessed": 1776954846817,
+      "type": "file"
+    },
+    {
+      "path": "templates\\skill\\workflows\\update-rules.md",
+      "accessCount": 1,
+      "lastAccessed": 1776954863580,
+      "type": "file"
+    },
+    {
+      "path": "templates\\skill\\rules\\project-rules.md",
+      "accessCount": 1,
+      "lastAccessed": 1776954863635,
+      "type": "file"
+    },
+    {
+      "path": "templates\\skill\\workflows\\fix-bug.md",
+      "accessCount": 1,
+      "lastAccessed": 1776954863660,
+      "type": "file"
+    },
+    {
+      "path": "templates\\skill\\workflows\\add-feature.md",
+      "accessCount": 1,
+      "lastAccessed": 1776954863734,
+      "type": "file"
+    },
+    {
+      "path": "templates\\skill\\rules\\coding-standards.md",
+      "accessCount": 1,
+      "lastAccessed": 1776954863821,
+      "type": "file"
+    },
+    {
+      "path": "templates\\skill\\references\\gotchas.md",
+      "accessCount": 1,
+      "lastAccessed": 1776954864074,
+      "type": "file"
+    },
+    {
+      "path": "templates\\shells\\GEMINI.md",
+      "accessCount": 1,
+      "lastAccessed": 1776954876425,
+      "type": "file"
+    },
+    {
+      "path": "templates\\shells\\.codex\\instructions.md",
+      "accessCount": 1,
+      "lastAccessed": 1776954876642,
+      "type": "file"
+    },
+    {
+      "path": "templates\\shells\\CLAUDE.md",
+      "accessCount": 1,
+      "lastAccessed": 1776954876754,
+      "type": "file"
+    },
+    {
+      "path": "scripts\\benchmark.py",
+      "accessCount": 1,
+      "lastAccessed": 1776954890663,
+      "type": "file"
+    },
+    {
+      "path": "docs\\two.md",
+      "accessCount": 1,
+      "lastAccessed": 1776954904831,
+      "type": "file"
+    },
+    {
+      "path": "docs\\how.md",
+      "accessCount": 1,
+      "lastAccessed": 1776954905659,
+      "type": "file"
+    },
+    {
+      "path": "templates\\skill\\scripts\\test-trigger.sh",
+      "accessCount": 1,
+      "lastAccessed": 1776954925313,
+      "type": "file"
+    },
+    {
+      "path": "templates\\skill\\scripts\\smoke-test.sh",
+      "accessCount": 1,
+      "lastAccessed": 1776954925439,
+      "type": "file"
+    },
+    {
+      "path": "templates\\hooks\\session-start.sh",
+      "accessCount": 1,
+      "lastAccessed": 1776954925519,
+      "type": "file"
+    }
+  ],
+  "userDirectives": []
+}

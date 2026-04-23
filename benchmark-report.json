@@ -1,0 +1,31 @@
+{
+  "single_file_tokens": {
+    "SKILL.md": 1463,
+    "project-rules.md": 3024,
+    "coding-standards.md": 1779,
+    "gotchas.md": 1689,
+    "fix-bug.md": 1267,
+    "add-feature.md": 1408,
+    "update-rules.md": 1126,
+    "smoke-test.sh": 1603,
+    "test-trigger.sh": 935
+  },
+  "per_task": {
+    "naive_all": 14294,
+    "skill_based": {
+      "fix_bug": 8096,
+      "add_feature": 8518,
+      "multi_subtask": 5613,
+      "other": 6266
+    }
+  },
+  "session_5rounds": {
+    "naive_total_tokens": 71470,
+    "skill_total_tokens": 39814,
+    "rounds": 5
+  },
+  "cost_usd": {
+    "naive": 0.21441,
+    "skill": 0.119442
+  }
+}

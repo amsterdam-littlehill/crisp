@@ -1,0 +1,21 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(python3 *)",
+      "Bash(python *)",
+      "Bash(bash -n install.sh)",
+      "Bash(bash -n templates/skill/scripts/smoke-test.sh)",
+      "Bash(mkdir -p .github/images)",
+      "Bash(mv images/*.png .github/images/)",
+      "Read(//d/code_space/**)",
+      "Bash(mv new *)",
+      "Bash(bash -n templates/hooks/session-start.sh)",
+      "Bash(bash -n templates/skill/scripts/test-trigger.sh)",
+      "Bash(cmd *)",
+      "Bash(git init *)",
+      "Bash(git remote *)",
+      "Bash(git add *)",
+      "Bash(git commit *)"
+    ]
+  }
+}
