@@ -9,8 +9,8 @@
 
 <p align="center">
   <a href="https://github.com/amsterdam-littlehill/crisp/releases"><img src="https://img.shields.io/github/v/release/amsterdam-littlehill/crisp?color=00d4aa&label=version&style=flat-square"></a>
-  <a href="#"><img src="https://img.shields.io/badge/token--efficiency-%E2%86%9371%25-00d4aa?style=flat-square"></a>
-  <a href="#"><img src="https://img.shields.io/badge/success-rate-%E2%86%9135%25-58a6ff?style=flat-square"></a>
+  <a href="#"><img src="https://img.shields.io/badge/token--efficiency-%E2%86%9377%25-00d4aa?style=flat-square"></a>
+  <a href="#"><img src="https://img.shields.io/badge/cost--savings-%E2%86%9377%25-58a6ff?style=flat-square"></a>
   <a href="https://github.com/amsterdam-littlehill/crisp/blob/main/LICENSE"><img src="https://img.shields.io/github/license/amsterdam-littlehill/crisp?style=flat-square&color=8b949e"></a>
 </p>
 
@@ -224,37 +224,34 @@ Root-level `CLAUDE.md`, `.cursorrules`, etc. become **Entry Proxies** — ≤15 
 
 ## Experiments & Benchmarks
 
-We measured token consumption on a representative fullstack project using CRP versus naive full-loading.
+Token consumption measured on the CRP template itself (`.claude/skills/<skill>/`) using `scripts/token-audit.py`.
 
 ### Methodology
 
-- **Project:** Medium-sized fullstack app (React + Node.js, ~940 lines of traditional docs)
-- **Task:** "Add a REST API endpoint for the user module"
-- **Token estimation:** Character-count heuristic (~4 chars/token), verified against `tiktoken`
+- **Target:** CRP skill template (all `.md` and `.sh` files)
+- **Estimation:** Character-count heuristic (~4 chars/token)
 - **Tool:** `scripts/token-audit.py`
+- **Date:** 2026-04-23
 
 ### Results
 
 | Metric | Naive Loading | CRP | Improvement |
 |---|---|---|---|
-| **Single-task context load** | ~7,500 tokens | ~2,200 tokens | **↓ 71%** |
-| **5-round session total** | 37,500 tokens | 11,000 tokens | **↓ 71%** |
-| **Task first-try success rate** | 65% | 88% | **↑ 35%** |
-| **Avg. debug rounds per task** | 2.8 rounds | 1.3 rounds | **↓ 54%** |
-| **Monthly docs maintenance** | 4 hours | 0.5 hours | **↓ 87%** |
+| **Single-task context load** | 4,120 tokens | 928–1,066 tokens | **↓ 74–77%** |
+| **5-round session total** | 20,600 tokens | 4,672 tokens | **↓ 77%** |
+| **Task first-try success rate** | — | — | *Observed in practice* |
+| **Avg. debug rounds per task** | — | — | *Observed in practice* |
+| **Monthly docs maintenance** | — | — | *Observed in practice* |
 
-### Cost Breakdown (Claude Sonnet 4.6, $3/$15 per 1M tokens)
+### Cost Breakdown (Claude Sonnet 4.6, $3/1M input tokens)
 
 Assuming 500 AI-assisted tasks/month, averaging 3 dialogue rounds:
 
 | Cost Item | Naive | CRP |
 |---|---|---|
-| Monthly Input Tokens | 11.28M | 1.40M |
-| Input Cost | $33.84 | $4.21 |
-| Monthly Output Tokens | 33.84M | 4.20M |
-| Output Cost | $507.60 | $63.00 |
-| **Monthly Total** | **~$541** | **~$67** |
-| **Discount** | Baseline | **1.2× (87% savings)** |
+| Monthly Input Tokens | 6.18M | 1.40M |
+| Input Cost | $18.54 | $4.20 |
+| **Monthly Input Savings** | Baseline | **↓ 77%** |
 
 > **Why output drops too:** With precise context, Agents produce less irrelevant text. No more "Based on the 47 rules I just read, here is a comprehensive analysis of your 3-line change."
 

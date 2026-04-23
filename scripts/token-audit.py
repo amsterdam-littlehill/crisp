@@ -40,12 +40,13 @@ def estimate_tokens(text: str, method: str = "heuristic") -> int:
 
 
 def scan_files(skill_dir: Path) -> dict[str, int]:
-    """Return mapping of relative path → token count for all .md files."""
+    """Return mapping of relative path → token count for all .md and .sh files."""
     results = {}
-    for md_file in sorted(skill_dir.rglob("*.md")):
-        rel = md_file.relative_to(skill_dir).as_posix()
-        text = md_file.read_text(encoding="utf-8")
-        results[rel] = estimate_tokens(text)
+    for pattern in ("*.md", "*.sh"):
+        for f in sorted(skill_dir.rglob(pattern)):
+            rel = f.relative_to(skill_dir).as_posix()
+            text = f.read_text(encoding="utf-8")
+            results[rel] = estimate_tokens(text)
     return results
 
 
@@ -83,7 +84,9 @@ def parse_common_tasks(gateway_path: Path) -> dict[str, list[str]]:
         cells = [c.strip() for c in line.split("|")]
         cells = [c for c in cells if c]
         if len(cells) >= 3 and cells[0].lower() not in ("task", "<!-- fill:"):
-            task_name = cells[0]
+            raw_name = cells[0]
+            # Normalize to snake_case for consistent keys
+            task_name = re.sub(r"[^\w\s]", "", raw_name).strip().lower().replace(" ", "_")
             reads = cells[1]
             # Extract all `path/to/file.md` references
             refs = re.findall(r"`([^`]+\.(?:md|mdc))`", reads)
@@ -155,6 +158,8 @@ def main() -> int:
     args = parser.parse_args()
 
     skill_name = args.skill
+    skill_dir = None
+
     if not skill_name:
         # Auto-detect: look for .claude/skills/*/
         skills_dir = Path(".claude/skills")
@@ -162,17 +167,30 @@ def main() -> int:
             subdirs = [d for d in skills_dir.iterdir() if d.is_dir() and d.name != "shared"]
             if len(subdirs) == 1:
                 skill_name = subdirs[0].name
+                skill_dir = subdirs[0]
             elif len(subdirs) > 1:
                 print("Multiple skills found. Use --skill to specify one:")
                 for d in subdirs:
                     print(f"  --skill {d.name}")
                 return 1
 
+        # Fallback: check templates/skill/
+        if skill_dir is None:
+            template_skill = Path("templates/skill")
+            if template_skill.exists():
+                skill_name = "skill"
+                skill_dir = template_skill
+
     if not skill_name:
         print("ERROR: Could not auto-detect skill. Use --skill.")
         return 1
 
-    skill_dir = Path(f".claude/skills/{skill_name}")
+    if skill_dir is None:
+        # Try .claude/skills first, then templates/skill
+        skill_dir = Path(f".claude/skills/{skill_name}")
+        if not skill_dir.exists():
+            skill_dir = Path(f"templates/{skill_name}")
+
     if not skill_dir.exists():
         print(f"ERROR: Skill directory not found: {skill_dir}")
         return 1
@@ -213,7 +231,7 @@ def main() -> int:
     if args.report:
         out_path = Path("benchmark-report.json")
         out_path.write_text(json.dumps(result, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
-        print(f"\n📄 Report written to {out_path}")
+        print(f"\nReport written to {out_path}")
 
     return 0
 

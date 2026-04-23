@@ -9,8 +9,8 @@
 
 <p align="center">
   <a href="https://github.com/amsterdam-littlehill/crisp/releases"><img src="https://img.shields.io/github/v/release/amsterdam-littlehill/crisp?color=00d4aa&label=version&style=flat-square"></a>
-  <a href="#"><img src="https://img.shields.io/badge/token--efficiency-%E2%86%9371%25-00d4aa?style=flat-square"></a>
-  <a href="#"><img src="https://img.shields.io/badge/success-rate-%E2%86%9135%25-58a6ff?style=flat-square"></a>
+  <a href="#"><img src="https://img.shields.io/badge/token--efficiency-%E2%86%9377%25-00d4aa?style=flat-square"></a>
+  <a href="#"><img src="https://img.shields.io/badge/cost--savings-%E2%86%9377%25-58a6ff?style=flat-square"></a>
   <a href="https://github.com/amsterdam-littlehill/crisp/blob/main/LICENSE"><img src="https://img.shields.io/github/license/amsterdam-littlehill/crisp?style=flat-square&color=8b949e"></a>
 </p>
 
@@ -223,37 +223,34 @@ your-project/
 
 ## 实验与基准
 
-我们在一个中型全栈项目（React + Node.js，~940 行传统文档）上测量了 CRP 与全量加载的 Token 消耗。
+使用 `scripts/token-audit.py` 对 CRP 模板本身（`.claude/skills/<skill>/`）测量 Token 消耗。
 
 ### 方法
 
-- **项目：** 中型全栈应用（React + Node.js，传统文档 ~940 行）
-- **任务：** "为用户模块添加 REST API 端点"
-- **Token 估算：** 字符数启发式（~4 字符/token），用 `tiktoken` 验证
+- **目标：** CRP skill 模板（所有 `.md` 和 `.sh` 文件）
+- **估算：** 字符数启发式（~4 字符/token）
 - **工具：** `scripts/token-audit.py`
+- **日期：** 2026-04-23
 
 ### 结果
 
 | 指标 | 全量加载 | CRP | 改进 |
 |---|---|---|---|
-| **单次任务上下文加载** | ~7,500 tokens | ~2,200 tokens | **↓ 71%** |
-| **5 轮会话总计** | 37,500 tokens | 11,000 tokens | **↓ 71%** |
-| **任务一次成功率** | 65% | 88% | **↑ 35%** |
-| **平均调试轮次** | 2.8 轮 | 1.3 轮 | **↓ 54%** |
-| **月度文档维护** | 4 小时 | 0.5 小时 | **↓ 87%** |
+| **单次任务上下文加载** | 4,120 tokens | 928–1,066 tokens | **↓ 74–77%** |
+| **5 轮会话总计** | 20,600 tokens | 4,672 tokens | **↓ 77%** |
+| **任务一次成功率** | — | — | *实践中观察* |
+| **平均调试轮次** | — | — | *实践中观察* |
+| **月度文档维护** | — | — | *实践中观察* |
 
-### 成本分解（Claude Sonnet 4.6，$3/$15 per 1M tokens）
+### 成本分解（Claude Sonnet 4.6，$3/1M input tokens）
 
 假设每月 500 次 AI 协作任务，平均 3 轮对话：
 
 | 成本项 | 全量 | CRP |
 |---|---|---|
-| 月度 Input Tokens | 11.28M | 1.40M |
-| Input 成本 | $33.84 | $4.21 |
-| 月度 Output Tokens | 33.84M | 4.20M |
-| Output 成本 | $507.60 | $63.00 |
-| **月度总计** | **~$541** | **~$67** |
-| **折扣** | 基准 | **1.2 折（省 87%）** |
+| 月度 Input Tokens | 6.18M | 1.40M |
+| Input 成本 | $18.54 | $4.20 |
+| **月度 Input 节省** | 基准 | **↓ 77%** |
 
 > **为什么 Output 也降：** 精准上下文使 Agent 输出更聚焦，不再出现"基于我刚读的 47 条规则，以下是你 3 行改动的全面分析"。
 

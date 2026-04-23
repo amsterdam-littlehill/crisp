@@ -1,31 +1,37 @@
 {
+  "skill_name": "skill",
+  "method": "heuristic",
   "single_file_tokens": {
-    "SKILL.md": 1463,
-    "project-rules.md": 3024,
-    "coding-standards.md": 1779,
-    "gotchas.md": 1689,
-    "fix-bug.md": 1267,
-    "add-feature.md": 1408,
-    "update-rules.md": 1126,
-    "smoke-test.sh": 1603,
-    "test-trigger.sh": 935
+    "references/gotchas.md": 138,
+    "rules/coding-standards.md": 132,
+    "rules/project-rules.md": 112,
+    "SKILL.md": 440,
+    "skills/shared/toolchain-rules.md": 65,
+    "workflows/add-feature.md": 176,
+    "workflows/fix-bug.md": 164,
+    "workflows/update-rules.md": 402,
+    "scripts/smoke-test.sh": 2046,
+    "scripts/test-trigger.sh": 445
   },
-  "per_task": {
-    "naive_all": 14294,
-    "skill_based": {
-      "fix_bug": 8096,
-      "add_feature": 8518,
-      "multi_subtask": 5613,
-      "other": 6266
-    }
+  "naive_all_tokens": 4120,
+  "l0_tokens": 244,
+  "gateway_tokens": 440,
+  "per_task_tokens": {
+    "fix_bug": 928,
+    "add_feature": 1066,
+    "multisubtask__long_run_3_independent_subtasks": 796,
+    "fill_task": 684,
+    "other__unlisted": 928,
+    "other_unlisted": 684
   },
   "session_5rounds": {
-    "naive_total_tokens": 71470,
-    "skill_total_tokens": 39814,
-    "rounds": 5
+    "naive_total_tokens": 20600,
+    "crp_total_tokens": 4672,
+    "savings_percent": 77.3
   },
   "cost_usd": {
-    "naive": 0.21441,
-    "skill": 0.119442
+    "naive": 0.0618,
+    "crp": 0.014,
+    "savings": 0.0478
   }
 }
