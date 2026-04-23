@@ -1,0 +1,30 @@
+import { join } from "node:path";
+import {
+	checkHookStatus,
+	injectHook,
+	removeHook,
+} from "../lib/telemetry/hooks";
+import { runReport } from "../lib/telemetry/reporter";
+
+const SETTINGS_PATH = join(".claude", "settings.json");
+
+export function cmdTelemetryStart(): number {
+	injectHook(SETTINGS_PATH);
+	return 0;
+}
+
+export function cmdTelemetryStop(): number {
+	removeHook(SETTINGS_PATH);
+	return 0;
+}
+
+export function cmdTelemetryStatus(): number {
+	const status = checkHookStatus(SETTINGS_PATH);
+	console.log(`Telemetry hook: ${status.active ? "ACTIVE" : "INACTIVE"}`);
+	console.log(`Events recorded: ${status.eventCount}`);
+	return 0;
+}
+
+export function cmdTelemetryReport(options: { skill?: string | null }): number {
+	return runReport(options.skill || null);
+}

@@ -1,0 +1,8 @@
+{"scenario": "feature", "worktree": "crisp-naive", "rep": 99, "turn": 1, "input_tokens": 79386, "output_tokens": 5019, "timestamp": "2026-04-24T15:34:59.669084+00:00", "error": null}
+{"scenario": "feature", "worktree": "crisp-naive", "rep": 99, "turn": 2, "input_tokens": 36342, "output_tokens": 4585, "timestamp": "2026-04-24T15:37:27.518084+00:00", "error": null}
+{"scenario": "feature", "worktree": "crisp-naive", "rep": 99, "turn": 3, "input_tokens": 94197, "output_tokens": 10072, "timestamp": "2026-04-24T15:39:28.145618+00:00", "error": null}
+{"scenario": "feature", "worktree": "crisp-naive", "rep": 99, "turn": 4, "input_tokens": 34147, "output_tokens": 3207, "timestamp": "2026-04-24T15:45:10.044501+00:00", "error": null}
+{"scenario": "feature", "worktree": "crisp-naive", "rep": 99, "turn": 5, "input_tokens": 37848, "output_tokens": 5136, "timestamp": "2026-04-24T15:46:56.067713+00:00", "error": null}
+{"scenario": "feature", "worktree": "crisp-naive", "rep": 99, "turn": 6, "input_tokens": 74781, "output_tokens": 3622, "timestamp": "2026-04-24T15:49:19.142698+00:00", "error": null}
+{"scenario": "feature", "worktree": "crisp-naive", "rep": 99, "turn": 7, "input_tokens": 41163, "output_tokens": 6009, "timestamp": "2026-04-24T15:51:33.006533+00:00", "error": null}
+{"scenario": "feature", "worktree": "crisp-naive", "rep": 99, "turn": 8, "input_tokens": 27416, "output_tokens": 1691, "timestamp": "2026-04-24T15:55:56.022848+00:00", "error": null}

@@ -1,0 +1,96 @@
+name: Validate
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+    branches: [main, master]
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: Install dependencies
+        run: bun install
+
+      - name: Run unit tests
+        run: bun test
+
+      - name: Validate crp.yaml schema
+        run: bun src/cli.ts validate
+
+      - name: Install scaffold to temp project
+        run: |
+          mkdir /tmp/test-project
+          cd /tmp/test-project
+          bash $GITHUB_WORKSPACE/install.sh --skill test-skill --project test-project
+
+      - name: Run smoke-test
+        run: |
+          cd /tmp/test-project
+          bash .claude/skills/test-skill/scripts/smoke-test.sh test-skill
+
+      - name: Run health-check
+        run: |
+          cd /tmp/test-project
+          bun $GITHUB_WORKSPACE/src/cli.ts check --skill test-skill
+
+      - name: Run token-audit
+        run: |
+          cd /tmp/test-project
+          bun $GITHUB_WORKSPACE/src/cli.ts audit --skill test-skill --report
+
+      - name: Verify benchmark report was generated
+        run: |
+          if [[ -f /tmp/test-project/benchmark-report.json ]]; then
+            echo "benchmark-report.json generated"
+          else
+            echo "benchmark-report.json missing"
+            exit 1
+          fi
+
+      - name: Test sync dry-run
+        run: |
+          cd /tmp/test-project
+          bun $GITHUB_WORKSPACE/src/cli.ts sync --check
+
+      - name: Test install.sh --dry-run
+        run: |
+          mkdir /tmp/dry-run-test
+          cd /tmp/dry-run-test
+          bash $GITHUB_WORKSPACE/install.sh --skill dry-skill --dry-run
+          if [[ -d .claude ]]; then
+            echo "--dry-run created files"
+            exit 1
+          fi
+          echo "--dry-run respected"
+
+      - name: Test install.sh --shadow
+        run: |
+          mkdir /tmp/shadow-test
+          cd /tmp/shadow-test
+          echo "# Existing CLAUDE.md" > .claude.md
+          bash $GITHUB_WORKSPACE/install.sh --skill shadow-skill --shadow
+          if [[ ! -d .claude/skills/shadow-skill ]]; then
+            echo "Shadow mode did not create skill"
+            exit 1
+          fi
+          echo "Shadow mode works"
+
+      - name: Test multi-skill flow
+        run: |
+          mkdir /tmp/multi-skill-test
+          cd /tmp/multi-skill-test
+          bash $GITHUB_WORKSPACE/install.sh --skill backend --project multi-test
+          bun $GITHUB_WORKSPACE/src/cli.ts skill create frontend --description "Frontend development"
+          bun $GITHUB_WORKSPACE/src/cli.ts sync
+          bun $GITHUB_WORKSPACE/src/cli.ts check --drifts
+          bun $GITHUB_WORKSPACE/src/cli.ts audit
+          bun $GITHUB_WORKSPACE/src/cli.ts skill list

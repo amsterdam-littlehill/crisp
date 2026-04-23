@@ -1,0 +1,38 @@
+{
+  "skill_name": "skill",
+  "method": "[exact]",
+  "single_file_tokens": {
+    "references/gotchas.md": 117,
+    "rules/coding-standards.md": 241,
+    "rules/project-rules.md": 210,
+    "SKILL.md": 669,
+    "skills/shared/toolchain-rules.md": 111,
+    "workflows/add-feature.md": 351,
+    "workflows/fix-bug.md": 348,
+    "workflows/update-rules.md": 368,
+    "scripts/smoke-test.sh": 2569,
+    "scripts/test-trigger.sh": 732
+  },
+  "naive_all_tokens": 5716,
+  "l0_tokens": 0,
+  "gateway_tokens": 669,
+  "per_task_tokens": {
+    "fix_bug": 1120,
+    "add_feature": 1237,
+    "multisubtask__long_run_3_independent_subtasks": 879,
+    "fill_task": 669,
+    "other__unlisted": 1120,
+    "other_unlisted": 669
+  },
+  "session_5rounds": {
+    "naive_total_tokens": 28580,
+    "crp_total_tokens": 5383,
+    "savings_percent": 81.2
+  },
+  "cost_per_1m_tokens": 3.0,
+  "cost_usd": {
+    "naive": 0.0857,
+    "crp": 0.0161,
+    "savings": 0.0696
+  }
+}

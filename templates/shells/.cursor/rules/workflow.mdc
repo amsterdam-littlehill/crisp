@@ -1,0 +1,33 @@
+---
+description: >
+  {{PROJECT}} workflow rules. When working on this project, always read
+  `.claude/skills/{{NAME}}/SKILL.md` first, then follow the Common Tasks route.
+  Re-read SKILL.md on every new task — "I already read it" is not valid.
+globs: ["**/*"]
+---
+
+# {{PROJECT}} — Workflow Rules
+
+## Quick Routing
+
+| Task | Required reads | Workflow |
+|------|---------------|----------|
+| Fix bug | `rules/project-rules.md` + `rules/coding-standards.md` | `workflows/fix-bug.md` |
+| Add feature | `rules/project-rules.md` + `rules/coding-standards.md` + `references/gotchas.md` | `workflows/add-feature.md` |
+| Multi-subtask | `rules/project-rules.md` | `workflows/update-rules.md` |
+| <!-- FILL: task --> | <!-- FILL: files --> | <!-- FILL: workflow --> |
+| **Other / unlisted** | `rules/project-rules.md` + `rules/coding-standards.md` | Check `workflows/` for closest match |
+
+## Mandatory
+
+1. Re-read `SKILL.md` on every new task — context compresses between tasks.
+2. Run Task Closure Protocol before declaring any non-trivial task complete.
+3. If you think "just this once I'll skip AAR" — STOP. Execute the AAR.
+
+## Red Flags — STOP
+
+- "Just this once I'll skip the AAR" -> stop. See `workflows/update-rules.md`
+  section "Rationalizations to Reject".
+- "This is a small fix, no need to re-read SKILL.md" -> stop. Context
+  compression makes "small" fixes dangerous.
+- Task declared "done" but no 30-second AAR scan -> stop.

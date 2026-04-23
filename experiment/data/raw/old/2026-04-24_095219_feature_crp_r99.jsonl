@@ -1,0 +1,8 @@
+{"scenario": "feature", "worktree": "crisp-crp", "rep": 99, "turn": 1, "input_tokens": 1550, "output_tokens": 320, "timestamp": "2026-04-24T09:52:19.881930+00:00", "raw_output_lines": 42}
+{"scenario": "feature", "worktree": "crisp-crp", "rep": 99, "turn": 2, "input_tokens": 1600, "output_tokens": 340, "timestamp": "2026-04-24T09:52:19.881945+00:00", "raw_output_lines": 42}
+{"scenario": "feature", "worktree": "crisp-crp", "rep": 99, "turn": 3, "input_tokens": 1650, "output_tokens": 360, "timestamp": "2026-04-24T09:52:19.881948+00:00", "raw_output_lines": 42}
+{"scenario": "feature", "worktree": "crisp-crp", "rep": 99, "turn": 4, "input_tokens": 1700, "output_tokens": 380, "timestamp": "2026-04-24T09:52:19.881950+00:00", "raw_output_lines": 42}
+{"scenario": "feature", "worktree": "crisp-crp", "rep": 99, "turn": 5, "input_tokens": 1750, "output_tokens": 400, "timestamp": "2026-04-24T09:52:19.881952+00:00", "raw_output_lines": 42}
+{"scenario": "feature", "worktree": "crisp-crp", "rep": 99, "turn": 6, "input_tokens": 1800, "output_tokens": 420, "timestamp": "2026-04-24T09:52:19.881954+00:00", "raw_output_lines": 42}
+{"scenario": "feature", "worktree": "crisp-crp", "rep": 99, "turn": 7, "input_tokens": 1850, "output_tokens": 440, "timestamp": "2026-04-24T09:52:19.881955+00:00", "raw_output_lines": 42}
+{"scenario": "feature", "worktree": "crisp-crp", "rep": 99, "turn": 8, "input_tokens": 1900, "output_tokens": 460, "timestamp": "2026-04-24T09:52:19.881957+00:00", "raw_output_lines": 42}
