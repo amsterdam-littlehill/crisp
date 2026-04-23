@@ -76,3 +76,7 @@ out/
 
 # Project docs
 docs/
+
+# Claude Code local state
+.claude/
+.omc/
