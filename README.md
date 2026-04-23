@@ -3,7 +3,7 @@
   <picture>
     <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/amsterdam-littlehill/crisp/main/.github/images/banner_crisp_dark.png">
     <source media="(prefers-color-scheme: light)" srcset="https://raw.githubusercontent.com/amsterdam-littlehill/crisp/main/.github/images/banner_crisp_light.png">
-    <img alt="crisp - Context Router Protocol" src="https://raw.githubusercontent.com/amsterdam-littlehill/crisp/main/.github/images/banner_crisp_dark" width="800">
+    <img alt="crisp - Context Router Protocol" src="https://raw.githubusercontent.com/amsterdam-littlehill/crisp/main/.github/images/banner_crisp_dark.png" width="800">
   </picture>
 </p>
 
