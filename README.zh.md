@@ -1,9 +1,9 @@
 <!-- Banner -->
 <p align="center">
   <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/amsterdam-littlehill/crisp/main/.github/images/banner_dark.png">
-    <source media="(prefers-color-scheme: light)" srcset="https://raw.githubusercontent.com/amsterdam-littlehill/crisp/main/.github/images/banner_light.png">
-    <img alt="crisp - Context Router Protocol" src="https://raw.githubusercontent.com/amsterdam-littlehill/crisp/main/.github/images/banner_dark.png" width="800">
+    <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/amsterdam-littlehill/crisp/main/.github/images/banner_crisp_dark.png">
+    <source media="(prefers-color-scheme: light)" srcset="https://raw.githubusercontent.com/amsterdam-littlehill/crisp/main/.github/images/banner_crisp_light.png">
+    <img alt="crisp - Context Router Protocol" src="https://raw.githubusercontent.com/amsterdam-littlehill/crisp/main/.github/images/banner_crisp_dark" width="800">
   </picture>
 </p>
 
@@ -21,20 +21,12 @@
 
 ---
 
-## 一句话定义
 
-CRP 是一种**项目级上下文治理模式**。它将散落在各处的 AI 协作规则，收敛为一个可路由、可度量、自维护的 `.crp/` 目录。Agent 不再"通读全文"，而是"按任务精准加载"。
+# 上下文路由协议 (CRP) 
 
----
-
-# Context-Router Protocol (CRP) · [![Validate](https://github.com/amsterdam-littlehill/crisp/actions/workflows/validate.yml/badge.svg)](https://github.com/amsterdam-littlehill/crisp/actions/workflows/validate.yml) [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT) [![Python 3.8+](https://img.shields.io/badge/python-3.8+-blue.svg)](https://www.python.org/downloads/)
-
-> **A project-level context governance pattern.** Converge scattered AI collaboration rules into a routable, measurable, self-maintaining directory. Agents no longer "read everything" — they "load precisely what the task needs."
->
 > **项目级上下文治理模式。** 将散落在各处的 AI 协作规则收敛为一个可路由、可度量、自维护的目录结构。Agent 不再"通读全文"，而是"按任务精准加载"。
 
 ```
-Structure serves content. Activation beats storage. Skeletons are reusable; content is forbidden to prefabricate.
 结构服务于内容，激活优于存储，骨架可复用，内容禁止预制。
 ```
 
