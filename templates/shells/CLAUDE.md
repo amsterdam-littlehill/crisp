@@ -14,8 +14,8 @@ Formal docs live under `.claude/skills/`. Read `.claude/skills/{{NAME}}/SKILL.md
 
 ## Auto-Triggers
 
-- **New task in same session** → re-read `skills/{{NAME}}/SKILL.md`, re-match Common Tasks route, re-read all required files. "I already read it" is not valid — context compresses, routes differ.
-- **Before declaring any non-trivial task complete** → run Task Closure Protocol (see `skills/{{NAME}}/workflows/update-rules.md`)
+- **New task in same session** → re-read `.claude/skills/{{NAME}}/SKILL.md`, re-match Common Tasks route, re-read all required files. "I already read it" is not valid — context compresses, routes differ.
+- **Before declaring any non-trivial task complete** → run Task Closure Protocol (see `.claude/skills/{{NAME}}/workflows/update-rules.md`)
 - Skip only for: formatting-only, comment-only, dependency-version-only, behavior-preserving refactors
 
 ## Red Flags — STOP

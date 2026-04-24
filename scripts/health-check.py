@@ -153,7 +153,18 @@ def check_link_integrity(skill_dir: Path, project_root: Path | None = None) -> N
 
 
 def check_proxy_link_integrity(project_root: Path, shells: list[Path]) -> None:
-    """Check links in entry proxy files (e.g., .claude/CLAUDE.md)."""
+    """Check links in entry proxy files (e.g., .claude/CLAUDE.md).
+
+    Proxy files contain paths relative to the skill directory (e.g.
+    `rules/project-rules.md` resolves to `.claude/skills/<name>/rules/project-rules.md`).
+    We validate against all registered skill directories.
+    """
+    skills_dir = project_root / ".claude" / "skills"
+    skill_dirs = [
+        d for d in skills_dir.iterdir()
+        if d.is_dir() and d.name != "shared"
+    ] if skills_dir.exists() else []
+
     for proxy in shells:
         if not proxy.exists():
             continue
@@ -162,20 +173,31 @@ def check_proxy_link_integrity(project_root: Path, shells: list[Path]) -> None:
         for ref in refs:
             if ref.startswith(("http://", "https://", "#")):
                 continue
+
+            # Try project-root resolution first
             target = project_root / ref
             resolved = target.resolve()
+            found = False
             try:
                 resolved.relative_to(project_root)
+                if resolved.exists():
+                    found = True
             except ValueError:
-                rel = proxy.resolve().relative_to(project_root)
-                emit_full(
-                    "WARN",
-                    f"Suspicious link in {rel}: `{ref}` escapes project directory",
-                    "Potential path traversal or information disclosure",
-                    "Use a path within the project directory",
-                )
-                continue
-            if not resolved.exists():
+                pass
+
+            # Fallback: try skill-relative resolution
+            if not found:
+                for sdir in skill_dirs:
+                    skill_target = (sdir / ref).resolve()
+                    try:
+                        skill_target.relative_to(project_root)
+                        if skill_target.exists():
+                            found = True
+                            break
+                    except ValueError:
+                        pass
+
+            if not found:
                 rel = proxy.resolve().relative_to(project_root)
                 emit_full(
                     "ERROR",

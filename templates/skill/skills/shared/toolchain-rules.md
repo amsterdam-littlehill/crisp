@@ -10,7 +10,7 @@
 ```markdown
 ## Always Read
 1. `rules/project-rules.md`
-2. `../shared/toolchain-rules.md`   ← 引用共享规则
+2. ../shared/toolchain-rules.md   ← 引用共享规则（单 skill 项目无需此项）
 ```
 
 <!-- FILL: 多 skill 项目才需要填充。单 skill 项目可留空。 -->
