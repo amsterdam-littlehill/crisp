@@ -17,6 +17,27 @@ jobs:
         with:
           python-version: '3.11'
 
+      - name: Install dependencies
+        run: |
+          pip install ruamel.yaml
+
+      - name: Validate crp.yaml schema
+        run: |
+          cd "$GITHUB_WORKSPACE"
+          python -c "
+          import sys
+          sys.path.insert(0, 'scripts')
+          from crp_manifest import load_manifest, validate_manifest
+          from pathlib import Path
+          manifest = load_manifest(Path('crp.yaml'))
+          errors = validate_manifest(manifest)
+          if errors:
+              for e in errors:
+                  print(f'  [ERROR] {e}')
+              sys.exit(1)
+          print('crp.yaml is valid')
+          "
+
       - name: Check for unreplaced placeholders in templates
         run: |
           echo "Checking templates for {{NAME}} or {{PROJECT}} placeholders..."
@@ -86,3 +107,14 @@ jobs:
             exit 1
           fi
           echo "✅ Shadow mode works"
+
+      - name: Test multi-skill flow
+        run: |
+          mkdir /tmp/multi-skill-test
+          cd /tmp/multi-skill-test
+          bash $GITHUB_WORKSPACE/install.sh --skill backend --project multi-test
+          python $GITHUB_WORKSPACE/scripts/crp-setup.py skill create frontend --description "Frontend development"
+          python $GITHUB_WORKSPACE/scripts/crp-setup.py sync
+          python $GITHUB_WORKSPACE/scripts/crp-setup.py check --drifts
+          python $GITHUB_WORKSPACE/scripts/crp-setup.py audit
+          python $GITHUB_WORKSPACE/scripts/crp-setup.py skill list

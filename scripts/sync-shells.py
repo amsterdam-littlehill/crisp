@@ -1,29 +1,35 @@
 #!/usr/bin/env python3
-"""
-sync-shells.py — Auto-generate thin shell entry files from gateway.md Common Tasks.
+"""sync-shells.py — Auto-generate thin shell entry files and parent gateway.
 
-Reads the Common Tasks table from gateway.md (or SKILL.md) and regenerates
-all IDE entry files (CLAUDE.md, .cursorrules, GEMINI.md, Codex instructions)
-with inline routing tables. This eliminates manual drift between shells.
+In v2.1 multi-skill mode:
+  - Generates a parent gateway at .claude/skills/SKILL.md
+  - Entry proxies contain skill-level routing tables
+
+In v2.0 single-skill mode (fallback when crp.yaml absent):
+  - Entry proxies contain task-level Common Tasks tables
 
 Usage:
-    python scripts/sync-shells.py --skill <name> [--check]
+    python scripts/sync-shells.py [--skill <name>] [--project <name>] [--check]
 
-    --check     Dry-run: report what would change without writing files.
+    --skill   Skill name (kebab-case). Auto-detected in v2.0 fallback.
+    --check   Dry-run: report what would change without writing files.
 """
 
+from __future__ import annotations
+
 import argparse
-import os
 import re
 import sys
 from pathlib import Path
+
+from crp_manifest import load_manifest, extract_skill_frontmatter
 
 
 def normalize_name(name: str) -> str:
     """Convert to kebab-case: lowercase, spaces→hyphens, remove non-alphanumeric."""
     name = name.lower().strip()
-    name = re.sub(r'[^\w\s-]', '', name)
-    name = re.sub(r'\s+', '-', name)
+    name = re.sub(r"[^\w\s-]", "", name)
+    name = re.sub(r"\s+", "-", name)
     if not name:
         raise ValueError("Skill name cannot be empty after normalization")
     return name
@@ -33,7 +39,6 @@ def parse_common_tasks(gateway_path: Path) -> list[dict]:
     """Extract the Common Tasks markdown table from gateway.md."""
     content = gateway_path.read_text(encoding="utf-8")
 
-    # Find the Common Tasks section
     match = re.search(
         r"##\s+Common Tasks.*?(\n##\s|\Z)",
         content,
@@ -45,14 +50,12 @@ def parse_common_tasks(gateway_path: Path) -> list[dict]:
     section = match.group(0)
     lines = [ln for ln in section.splitlines() if ln.strip().startswith("|")]
 
-    # Skip header and separator lines
     data_rows = []
     for line in lines:
-        # Skip separator like |------|------|
-        if re.search(r"\|[\s-:]+\|", line) and not re.search(r"[a-zA-Z]", line):
+        if re.search(r"\|[\s:]+\|", line) and not re.search(r"[a-zA-Z]", line):
             continue
         cells = [c.strip() for c in line.split("|")]
-        cells = [c for c in cells if c]  # remove empty edge cells
+        cells = [c for c in cells if c]
         if len(cells) >= 3 and cells[0].lower() not in ("task", "<!-- fill:"):
             data_rows.append(
                 {
@@ -62,6 +65,117 @@ def parse_common_tasks(gateway_path: Path) -> list[dict]:
                 }
             )
     return data_rows
+
+
+def _generate_skill_routing_table(skills: list[dict], project_name: str) -> str:
+    """Generate a skill-level routing table for multi-skill entry proxies."""
+    lines = [
+        f"# {project_name} — Agent Skill Entry",
+        "",
+        "Formal docs live under `.claude/skills/`. Read `.claude/skills/SKILL.md` first — it routes to the correct child skill.",
+        "",
+        "## Skill Routing (survives context truncation)",
+        "",
+        "| Skill | Description | Entry |",
+        "|-------|-------------|-------|",
+    ]
+    for skill in skills:
+        name = skill["name"]
+        desc = skill.get("description", "")
+        entry = f"`skills/{name}/SKILL.md`"
+        lines.append(f"| {name} | {desc} | {entry} |")
+
+    default = next(
+        (s["name"] for s in skills if s.get("primary")),
+        skills[0]["name"] if skills else "",
+    )
+    lines += [
+        "",
+        "## Auto-Route Rule",
+        "",
+        f"1. **Default skill**: `{default}` — use unless task clearly matches another skill.",
+        "2. **Skill switching**: If task matches non-default skill, re-read that skill's SKILL.md for task-level routing.",
+        "3. **Unknown tasks**: Use default skill; check if task belongs to another skill.",
+        "",
+        "## Session Discipline",
+        "",
+        "- Every new task must re-read `.claude/skills/SKILL.md` and re-match the skill route.",
+        "- Then re-read the matched child skill's SKILL.md and follow its Common Tasks route.",
+        "- Do not rely on memory across tasks.",
+        "",
+    ]
+    return "\n".join(lines)
+
+
+def _generate_multi_skill_cursor_rules(skills: list[dict], project_name: str) -> str:
+    lines = [
+        f"# {project_name} — Workflow Rules",
+        "",
+        "## Skill Routing",
+        "",
+        "| Skill | Description |",
+        "|-------|-------------|",
+    ]
+    for skill in skills:
+        lines.append(f"| {skill['name']} | {skill.get('description', '')} |")
+    lines += [
+        "",
+        "## Mandatory",
+        "",
+        "1. Read `.claude/skills/SKILL.md` first for skill-level routing.",
+        "2. Then read the matched child skill's SKILL.md for task-level routing.",
+        "3. Run Closure Extraction before declaring any non-trivial task complete.",
+        "",
+    ]
+    return "\n".join(lines)
+
+
+def _generate_multi_skill_gemini_md(skills: list[dict], project_name: str) -> str:
+    lines = [
+        f"# {project_name} — Gemini Entry",
+        "",
+        "Read `.claude/skills/SKILL.md` first for skill-level routing. Then follow the child skill's routing.",
+        "",
+        "## Skill Routing",
+        "",
+        "| Skill | Description |",
+        "|-------|-------------|",
+    ]
+    for skill in skills:
+        lines.append(f"| {skill['name']} | {skill.get('description', '')} |")
+    lines += [
+        "",
+        "## Session Refresh",
+        "",
+        "Every new task must re-read `.claude/skills/SKILL.md`, rematch skill route, then re-read child skill's SKILL.md.",
+        "",
+    ]
+    return "\n".join(lines)
+
+
+def _generate_multi_skill_codex_instructions(skills: list[dict], project_name: str) -> str:
+    lines = [
+        f"# {project_name} — Codex Instructions",
+        "",
+        "Agent context lives in `.claude/skills/`. Start by reading `.claude/skills/SKILL.md` for skill routing.",
+        "",
+        "## Skill Routing",
+        "",
+        "| Skill | Description |",
+        "|-------|-------------|",
+    ]
+    for skill in skills:
+        lines.append(f"| {skill['name']} | {skill.get('description', '')} |")
+    lines += [
+        "",
+        "## Mandatory Checks",
+        "",
+        "- Re-read `.claude/skills/SKILL.md` at the start of every new task.",
+        "- Then read the matched child skill's SKILL.md for task-level routing.",
+        "- Run Closure Extraction (AAR) before marking any non-trivial task complete.",
+        "",
+    ]
+    return "\n".join(lines)
 
 
 def generate_claude_md(skill_name: str, project_name: str, tasks: list[dict]) -> str:
@@ -176,33 +290,82 @@ SHELL_GENERATORS = {
     ".cursor/rules/workflow.mdc": generate_cursor_rules,
 }
 
+MULTI_SKILL_GENERATORS = {
+    ".claude/CLAUDE.md": _generate_skill_routing_table,
+    ".claude/GEMINI.md": _generate_multi_skill_gemini_md,
+    ".codex/instructions.md": _generate_multi_skill_codex_instructions,
+    ".cursor/rules/workflow.mdc": _generate_multi_skill_cursor_rules,
+}
 
-def main() -> int:
-    parser = argparse.ArgumentParser(description="Sync thin shells from gateway.md Common Tasks")
-    parser.add_argument("--skill", required=True, help="Skill name (kebab-case)")
-    parser.add_argument("--project", default=None, help="Project name (defaults to skill name)")
-    parser.add_argument("--check", action="store_true", help="Dry-run: report diffs without writing")
-    args = parser.parse_args()
 
-    skill_name = normalize_name(args.skill)
-    project_name = args.project or skill_name
-    skill_dir = Path(f".claude/skills/{skill_name}")
-    gateway_path = skill_dir / "SKILL.md"
+def generate_parent_gateway(manifest: dict) -> str:
+    """Generate the parent gateway SKILL.md content from manifest + child frontmatters."""
+    project_name = manifest.get("project", {}).get("name", "Project")
+    skills = manifest.get("skills", [])
 
-    if not gateway_path.exists():
-        print(f"ERROR: {gateway_path} not found. Run install.sh first.")
-        return 1
+    lines = [
+        "<!-- GENERATED BY CRP — DO NOT EDIT THIS FILE -->",
+        "<!-- Run `crp sync` to regenerate -->",
+        "",
+        f"# {project_name} — CRP Skill Router",
+        "",
+        "## Available Skills",
+        "",
+        "| Skill | Description | Entry |",
+        "|-------|-------------|-------|",
+    ]
 
-    tasks = parse_common_tasks(gateway_path)
-    if not tasks:
-        print("WARNING: No Common Tasks found in gateway.md. Shells will contain only fallback route.")
+    for skill in skills:
+        name = skill["name"]
+        skill_dir = Path(f".claude/skills/{name}")
+        frontmatter = extract_skill_frontmatter(skill_dir)
+        desc = frontmatter.get("description", "")
+        desc = desc.split("\n")[0].strip()
+        if desc.startswith("<!--"):
+            desc = ""
+        default_marker = "*" if name == manifest.get("default_skill") else ""
+        lines.append(f"| {name} | {desc} | `skills/{name}/SKILL.md` | {default_marker} |")
 
+    lines += [
+        "",
+        "## Auto-Route Rule",
+        "",
+        "1. **Read `.claude/skills/SKILL.md` first** on every new task.",
+        "2. Match task intent to the skill descriptions above.",
+        "3. Read the matched skill's `SKILL.md` for task-level routing (Common Tasks).",
+        "4. If ambiguous, use the default skill (marked *).",
+        "",
+        "## Session Discipline",
+        "",
+        "- Never skip re-reading this file — context compresses between tasks.",
+        "- Skill-level routing must happen before task-level routing.",
+        "",
+    ]
+    return "\n".join(lines)
+
+
+def write_parent_gateway(content: str) -> Path:
+    """Write parent gateway to .claude/skills/SKILL.md."""
+    parent_path = Path(".claude/skills/SKILL.md")
+    parent_path.parent.mkdir(parents=True, exist_ok=True)
+    parent_path.write_text(content, encoding="utf-8")
+    return parent_path
+
+
+def write_shells(
+    generators: dict[str, callable],
+    skill_name: str,
+    project_name: str,
+    tasks: list[dict],
+    check: bool = False,
+) -> int:
+    """Write entry proxies using the provided generators. Returns count of changed files."""
     changed = 0
-    for rel_path, generator in SHELL_GENERATORS.items():
+    for rel_path, generator in generators.items():
         target = Path(rel_path)
         new_content = generator(skill_name, project_name, tasks)
 
-        if args.check:
+        if check:
             if target.exists():
                 old_content = target.read_text(encoding="utf-8")
                 if old_content.strip() != new_content.strip():
@@ -218,13 +381,138 @@ def main() -> int:
             target.write_text(new_content, encoding="utf-8")
             print(f"[WRITTEN] {rel_path}")
             changed += 1
+    return changed
 
-    if args.check:
+
+def write_multi_skill_shells(
+    skills: list[dict],
+    project_name: str,
+    check: bool = False,
+) -> int:
+    """Write multi-skill entry proxies. Returns count of changed files."""
+    changed = 0
+    for rel_path, generator in MULTI_SKILL_GENERATORS.items():
+        target = Path(rel_path)
+        new_content = generator(skills, project_name)
+
+        if check:
+            if target.exists():
+                old_content = target.read_text(encoding="utf-8")
+                if old_content.strip() != new_content.strip():
+                    print(f"[WOULD CHANGE] {rel_path}")
+                    changed += 1
+                else:
+                    print(f"[UNCHANGED] {rel_path}")
+            else:
+                print(f"[WOULD CREATE] {rel_path}")
+                changed += 1
+        else:
+            target.parent.mkdir(parents=True, exist_ok=True)
+            target.write_text(new_content, encoding="utf-8")
+            print(f"[WRITTEN] {rel_path}")
+            changed += 1
+    return changed
+
+
+def run_sync(skill_name: str | None = None, project_name: str | None = None, check: bool = False) -> int:
+    """Core sync logic. Called by main() and by crp-setup.py."""
+    manifest = load_manifest(Path("crp.yaml"))
+    is_v21 = bool(manifest and manifest.get("version") == "2.1")
+
+    if is_v21:
+        skills = manifest.get("skills", [])
+        if not skills:
+            print("ERROR: No skills defined in crp.yaml")
+            return 1
+
+        project_name = project_name or manifest.get("project", {}).get("name", "project")
+
+        # Generate parent gateway
+        parent_content = generate_parent_gateway(manifest)
+        if check:
+            parent_path = Path(".claude/skills/SKILL.md")
+            if parent_path.exists():
+                old = parent_path.read_text(encoding="utf-8")
+                if old.strip() != parent_content.strip():
+                    print("[WOULD CHANGE] .claude/skills/SKILL.md (parent gateway)")
+                else:
+                    print("[UNCHANGED] .claude/skills/SKILL.md")
+            else:
+                print("[WOULD CREATE] .claude/skills/SKILL.md")
+        else:
+            parent_path = write_parent_gateway(parent_content)
+            print(f"[WRITTEN] {parent_path}")
+
+        # Generate multi-skill entry proxies
+        changed = write_multi_skill_shells(skills, project_name, check)
+
+        # Also sync individual skill shells if --skill is provided
+        if skill_name:
+            skill_dir = Path(f".claude/skills/{skill_name}")
+            gateway_path = skill_dir / "SKILL.md"
+            if gateway_path.exists():
+                try:
+                    tasks = parse_common_tasks(gateway_path)
+                except ValueError:
+                    tasks = []
+                skill_changed = write_shells(SHELL_GENERATORS, skill_name, project_name, tasks, check)
+                changed += skill_changed
+
+        if check:
+            print(f"\n{'DRY RUN' if changed else 'ALL CLEAN'}: {changed} file(s) would change.")
+            return 1 if changed else 0
+
+        print(f"\n[OK] Synced {changed} file(s) for multi-skill project: {project_name}")
+        return 0
+
+    # v2.0 single-skill fallback
+    if not skill_name:
+        skills_dir = Path(".claude/skills")
+        if skills_dir.exists():
+            subdirs = [d for d in skills_dir.iterdir() if d.is_dir() and d.name != "shared"]
+            if len(subdirs) == 1:
+                skill_name = subdirs[0].name
+
+    if not skill_name:
+        print("ERROR: Could not auto-detect skill. Use --skill or create crp.yaml.")
+        return 1
+
+    skill_name = normalize_name(skill_name)
+    project_name = project_name or skill_name
+    skill_dir = Path(f".claude/skills/{skill_name}")
+    gateway_path = skill_dir / "SKILL.md"
+
+    if not gateway_path.exists():
+        print(f"ERROR: {gateway_path} not found. Run install.sh first.")
+        return 1
+
+    try:
+        tasks = parse_common_tasks(gateway_path)
+    except ValueError as e:
+        print(f"WARNING: {e}")
+        tasks = []
+
+    if not tasks:
+        print("WARNING: No Common Tasks found. Shells will contain only fallback route.")
+
+    changed = write_shells(SHELL_GENERATORS, skill_name, project_name, tasks, check)
+
+    if check:
         print(f"\n{'DRY RUN' if changed else 'ALL CLEAN'}: {changed} file(s) would change.")
         return 1 if changed else 0
 
-    print(f"\n✅ Synced {changed} shell file(s) from {gateway_path}")
+    print(f"\n[OK] Synced {changed} shell file(s) from {gateway_path}")
     return 0
+
+
+def main() -> int:
+    parser = argparse.ArgumentParser(description="Sync thin shells from gateway.md Common Tasks")
+    parser.add_argument("--skill", default=None, help="Skill name (kebab-case)")
+    parser.add_argument("--project", default=None, help="Project name (defaults to skill name)")
+    parser.add_argument("--check", action="store_true", help="Dry-run: report diffs without writing")
+    args = parser.parse_args()
+
+    return run_sync(args.skill, args.project, args.check)
 
 
 if __name__ == "__main__":

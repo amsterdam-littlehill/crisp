@@ -1,0 +1,10 @@
+version: "2.1"
+project:
+  name: crisp
+  description: Context-Router Protocol reference implementation
+skills: []
+checks:
+  max_gateway_lines: 100
+  max_proxy_lines: 60
+audit:
+  use_tiktoken: true
