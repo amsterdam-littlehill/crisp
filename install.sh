@@ -9,5 +9,9 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 # Forward all arguments to crp-setup.py init
 python "$SCRIPT_DIR/scripts/crp-setup.py" init "$@"
-# Regenerate shells from SKILL.md so installed proxies match generator output
-python "$SCRIPT_DIR/scripts/crp-setup.py" sync
+
+# Skip sync during dry-run (no files were actually created)
+if [[ "$*" != *"--dry-run"* ]]; then
+    # Regenerate shells from SKILL.md so installed proxies match generator output
+    python "$SCRIPT_DIR/scripts/crp-setup.py" sync
+fi
