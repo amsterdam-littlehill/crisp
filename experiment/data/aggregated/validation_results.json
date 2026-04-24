@@ -1,0 +1,22 @@
+{
+  "total_records": 16,
+  "scenarios": {
+    "feature": {
+      "scenario": "feature",
+      "crp_count": 8,
+      "naive_count": 8,
+      "crp_avg_input": 1725.0,
+      "naive_avg_input": 6450.0,
+      "crp_std_input": 122.47,
+      "naive_std_input": 244.95,
+      "savings_percent": 73.26,
+      "paired_diff_mean": 4725.0,
+      "paired_diff_std": 122.47,
+      "paired_n": 8,
+      "t_statistic": 109.11920087683927,
+      "p_value": 1.4311095250638743e-12,
+      "significant": true
+    }
+  },
+  "overall_savings": 73.26
+}

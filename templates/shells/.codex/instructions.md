@@ -7,15 +7,15 @@ Formal docs live under `.claude/skills/`. Read `.claude/skills/{{NAME}}/SKILL.md
 | Task | Required reads | Workflow |
 |------|---------------|----------|
 | Fix bug | `rules/project-rules.md` + `rules/coding-standards.md` | `workflows/fix-bug.md` |
-| Add feature | `rules/project-rules.md` + `rules/coding-standards.md` | `workflows/add-feature.md` |
+| Add feature | `rules/project-rules.md` + `rules/coding-standards.md` + `references/gotchas.md` | `workflows/add-feature.md` |
 | Multi-subtask / long run (≥3 independent subtasks) | `rules/project-rules.md` | `workflows/update-rules.md` |
-| <!-- FILL: add your common task --> | <!-- FILL: required reads --> | <!-- FILL: workflow path --> |
-| Other / unlisted | `rules/project-rules.md` | Check `workflows/` for closest match |
+| <!-- FILL: task --> | <!-- FILL: files --> | <!-- FILL: workflow --> |
+| **Other / unlisted** | `rules/project-rules.md` + `rules/coding-standards.md` | Check `workflows/` for closest match |
 
 ## Auto-Triggers
 
-- **New task in same session** → re-read `skills/{{NAME}}/SKILL.md`, re-match Common Tasks route, re-read all required files. "I already read it" is not valid — context compresses, routes differ.
-- **Before declaring any non-trivial task complete** → run Task Closure Protocol (see `skills/{{NAME}}/workflows/update-rules.md`)
+- **New task in same session** → re-read `.claude/skills/{{NAME}}/SKILL.md`, re-match Common Tasks route, re-read all required files. "I already read it" is not valid — context compresses, routes differ.
+- **Before declaring any non-trivial task complete** → run Task Closure Protocol (see `.claude/skills/{{NAME}}/workflows/update-rules.md`)
 - Skip only for: formatting-only, comment-only, dependency-version-only, behavior-preserving refactors
 
 ## Red Flags — STOP

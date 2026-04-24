@@ -1,16 +1,15 @@
 <!-- Banner -->
 <p align="center">
   <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/amsterdam-littlehill/crisp/main/.github/images/banner_crisp_dark.png">
-    <source media="(prefers-color-scheme: light)" srcset="https://raw.githubusercontent.com/amsterdam-littlehill/crisp/main/.github/images/banner_crisp_light.png">
-    <img alt="crisp - Context Router Protocol" src="https://raw.githubusercontent.com/amsterdam-littlehill/crisp/main/.github/images/banner_crisp_dark.png" width="800">
+    <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/amsterdam-littlehill/crisp/master/.github/images/banner_crisp_dark.png">
+    <source media="(prefers-color-scheme: light)" srcset="https://raw.githubusercontent.com/amsterdam-littlehill/crisp/master/.github/images/banner_crisp_light.png">
+    <img alt="crisp - Context Router Protocol" src="https://raw.githubusercontent.com/amsterdam-littlehill/crisp/master/.github/images/banner_crisp_dark.png" width="800">
   </picture>
 </p>
 
 <p align="center">
-  <a href="https://github.com/amsterdam-littlehill/crisp/releases"><img src="https://img.shields.io/github/v/release/amsterdam-littlehill/crisp?color=00d4aa&label=version&style=flat-square"></a>
-  <a href="#"><img src="https://img.shields.io/badge/token--efficiency-%E2%86%9377%25-00d4aa?style=flat-square"></a>
-  <a href="#"><img src="https://img.shields.io/badge/cost--savings-%E2%86%9377%25-58a6ff?style=flat-square"></a>
+  <a href="#"><img src="https://img.shields.io/badge/token--efficiency-%E2%86%9347%25-00d4aa?style=flat-square"></a>
+  <a href="#"><img src="https://img.shields.io/badge/cost--savings-%E2%86%9327%25-58a6ff?style=flat-square"></a>
   <a href="https://github.com/amsterdam-littlehill/crisp/blob/main/LICENSE"><img src="https://img.shields.io/github/license/amsterdam-littlehill/crisp?style=flat-square&color=8b949e"></a>
 </p>
 
@@ -136,13 +135,19 @@ CRP 的第一原理：
 # 1. 克隆脚手架
 git clone --depth 1 https://github.com/amsterdam-littlehill/crisp.git /tmp/crp
 
-# 2. 安装
-bash /tmp/crp/install.sh --skill backend --project my-app
+# 2. 安装（统一 CLI）
+python /tmp/crp/scripts/crp-setup.py init --skill backend --project my-app
+# 或使用包装脚本：
+# bash /tmp/crp/install.sh --skill backend --project my-app
 
-# 3. 填充所有 <!-- FILL: --> 标记
+# 3. 添加更多技能（可选 —— v2.1 多技能模式）
+python /tmp/crp/scripts/crp-setup.py skill create frontend --description "Frontend development"
+python /tmp/crp/scripts/crp-setup.py sync
+
+# 4. 填充所有 <!-- FILL: --> 标记
 grep -rn 'FILL:' .claude/skills/backend/
 
-# 4. 自检
+# 5. 自检
 bash .claude/skills/backend/scripts/smoke-test.sh backend
 ```
 
@@ -160,25 +165,60 @@ echo '<!-- CRP-ROUTE: see .claude/skills/backend/SKILL.md -->' >> .claude/CLAUDE
 
 ```bash
 # 审计现有规则并生成 Token 基线
-python scripts/token-audit.py --skill backend --report
+python scripts/crp-setup.py audit --report
+# 或直接使用：
+# python scripts/token-audit.py --skill backend --report
 
 # 编辑 gateway.md 后自动同步所有入口代理
-python scripts/sync-shells.py --skill backend
+python scripts/crp-setup.py sync
+# 或直接使用：
+# python scripts/sync-shells.py --skill backend
 
-# 健康检查
-python scripts/health-check.py --skill backend
+# 健康检查 + 漂移检测
+python scripts/crp-setup.py check --drifts
+# 或直接使用：
+# python scripts/health-check.py --skill backend --drifts
 ```
+
+### CRP Manifest (`crp.yaml`)
+
+v2.1 引入项目级清单，声明技能、项目元数据和配置：
+
+```yaml
+version: "2.1"
+project:
+  name: my-app
+  description: Context-Router Protocol reference implementation
+skills:
+  - name: backend
+    description: API 与业务逻辑
+  - name: frontend
+    description: UI 与客户端代码
+default_skill: backend
+checks:
+  max_gateway_lines: 100
+  max_proxy_lines: 60
+audit:
+  use_tiktoken: true
+```
+
+清单驱动以下功能：
+- **多技能路由** —— 父网关 (`.claude/skills/SKILL.md`) 根据清单 + 子技能 frontmatter 自动生成
+- **漂移检测** —— `crp-setup.py check --drifts` 验证清单 ↔ 目录 ↔ 生成代理的一致性
+- **统一 CLI** —— 所有操作通过 `crp-setup.py` 完成
 
 安装后，项目新增以下文件（零侵入 —— 不触碰现有代码）：
 
 ```
 your-project/
+├── crp.yaml                   ← CRP 清单（技能、配置、默认值）
 ├── .claude/
 │   ├── CLAUDE.md              ← 入口代理（≤15 行，抗压缩）
 │   ├── GEMINI.md              ← Gemini 专属入口
 │   ├── hooks/
 │   │   └── session-start.sh   ← 轻量级信号重注入
 │   └── skills/
+│       ├── SKILL.md           ← 父网关（v2.1 多技能路由器）
 │       ├── backend/           ← 你的网关
 │       │   ├── SKILL.md       ← 路由网关（≤100 行）
 │       │   ├── rules/
@@ -194,11 +234,16 @@ your-project/
 │       │   │   ├── smoke-test.sh   ← 48 项自检
 │       │   │   └── test-trigger.sh
 │       │   └── assets/
+│       ├── frontend/          ← 另一个技能（v2.1）
+│       │   └── SKILL.md
 │       └── shared/            ← 跨技能公约
 ├── .cursor/
 │   ├── rules/workflow.mdc     ← Cursor Rules 入口
-│   └── skills/backend/
-│       └── SKILL.md           ← 从主网关同步
+│   └── skills/
+│       ├── backend/
+│       │   └── SKILL.md
+│       └── frontend/
+│           └── SKILL.md
 └── .codex/
     └── instructions.md        ← Codex 入口
 ```
@@ -335,9 +380,9 @@ your-project/
 
 ## 路线图
 
-### v2.0（当前）
+### v2.0
 - [x] 48 项自检 (`smoke-test.sh`)
-- [x] 跨平台安装器 (`install.sh` —— BSD/GNU sed 兼容)
+- [x] 跨平台安装器 (`install.sh` —— 现为 `crp-setup.py` 的包装脚本)
 - [x] 轻量级 SessionStart Hook（基于信号，零 Token 成本）
 - [x] 内置 Token/成本估算 (`scripts/token-audit.py`)
 - [x] 入口代理自动生成器 (`scripts/sync-shells.py`)
@@ -345,13 +390,17 @@ your-project/
 - [x] 健康扫描 (`scripts/health-check.py`)
 - [x] CI/CD 验证工作流
 
-### v2.1（下一步）
-- [ ] `tiktoken` 集成，精确 Token 计数
-- [ ] 漂移检测：入口代理与网关偏离时自动告警
-- [ ] 交互式安装向导 (`install.sh --interactive`)
-- [ ] 多技能编排（父网关路由到子技能）
+### v2.1（当前）
+- [x] 统一 CLI (`crp-setup.py`): `init`, `skill create/delete/list`, `sync`, `check`, `audit`
+- [x] `crp.yaml` 清单：声明式技能注册表，带校验
+- [x] 多技能编排：父网关 (`.claude/skills/SKILL.md`) 路由到子技能
+- [x] `tiktoken` 精确 Token 计数（可选依赖）
+- [x] 漂移检测 (`--drifts`)：验证清单 ↔ 目录 ↔ 生成代理的一致性
+- [x] Skill frontmatter 提取（name, description, primary 标记）
+- [x] v2.0 向后兼容：`crp.yaml` 缺失时自动检测单技能
 
 ### v2.2（未来）
+- [ ] 交互式安装向导 (`crp-setup.py init --interactive`)
 - [ ] 运行时遥测：记录每次任务的实际 Token 消耗
 - [ ] 自动摘要：将稳定的 `gotchas.md` 压缩进网关 Known Gotchas
 - [ ] VS Code 扩展：gateway.md 语法检查与自动补全
@@ -366,9 +415,11 @@ your-project/
 
 1. 本地运行验证套件：
    ```bash
+   python scripts/crp-setup.py init --skill test-skill --project test
+   python scripts/crp-setup.py check --drifts
+   python scripts/crp-setup.py audit --report
    bash templates/skill/scripts/smoke-test.sh test-skill
-   python scripts/health-check.py --skill test-skill
-   python scripts/token-audit.py --skill test-skill --report
+   python -m pytest tests/
    ```
 
 2. 确保模板中无占位符残留：

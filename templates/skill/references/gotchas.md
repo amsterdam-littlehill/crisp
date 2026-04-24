@@ -4,7 +4,7 @@
 > After installation this file should contain only the heading and FILL markers,
 > waiting for natural accumulation as the project evolves.
 >
-> See `ANTI-TEMPLATES.md` for a filled example of what a good gotcha looks like.
+> Good gotchas describe: trigger condition → surprising behavior → workaround.
 
 ## <!-- FILL: Gotcha 1 -->
 

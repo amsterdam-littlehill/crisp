@@ -1,16 +1,15 @@
 <!-- Banner -->
 <p align="center">
   <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/amsterdam-littlehill/crisp/main/.github/images/banner_crisp_dark.png">
-    <source media="(prefers-color-scheme: light)" srcset="https://raw.githubusercontent.com/amsterdam-littlehill/crisp/main/.github/images/banner_crisp_light.png">
-    <img alt="crisp - Context Router Protocol" src="https://raw.githubusercontent.com/amsterdam-littlehill/crisp/main/.github/images/banner_crisp_dark.png" width="800">
+    <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/amsterdam-littlehill/crisp/master/.github/images/banner_crisp_dark.png">
+    <source media="(prefers-color-scheme: light)" srcset="https://raw.githubusercontent.com/amsterdam-littlehill/crisp/master/.github/images/banner_crisp_light.png">
+    <img alt="crisp - Context Router Protocol" src="https://raw.githubusercontent.com/amsterdam-littlehill/crisp/master/.github/images/banner_crisp_dark.png" width="800">
   </picture>
 </p>
 
 <p align="center">
-  <a href="https://github.com/amsterdam-littlehill/crisp/releases"><img src="https://img.shields.io/github/v/release/amsterdam-littlehill/crisp?color=00d4aa&label=version&style=flat-square"></a>
-  <a href="#"><img src="https://img.shields.io/badge/token--efficiency-%E2%86%9377%25-00d4aa?style=flat-square"></a>
-  <a href="#"><img src="https://img.shields.io/badge/cost--savings-%E2%86%9377%25-58a6ff?style=flat-square"></a>
+  <a href="#"><img src="https://img.shields.io/badge/token--efficiency-%E2%86%9347%25-00d4aa?style=flat-square"></a>
+  <a href="#"><img src="https://img.shields.io/badge/cost--savings-%E2%86%9327%25-58a6ff?style=flat-square"></a>
   <a href="https://github.com/amsterdam-littlehill/crisp/blob/main/LICENSE"><img src="https://img.shields.io/github/license/amsterdam-littlehill/crisp?style=flat-square&color=8b949e"></a>
 </p>
 
@@ -137,13 +136,19 @@ Why a table? Compression algorithms preserve structured data better than prose. 
 # 1. Clone the scaffold
 git clone --depth 1 https://github.com/amsterdam-littlehill/crisp.git /tmp/crp
 
-# 2. Install
-bash /tmp/crp/install.sh --skill backend --project my-app
+# 2. Install (unified CLI)
+python /tmp/crp/scripts/crp-setup.py init --skill backend --project my-app
+# Or use the thin wrapper:
+# bash /tmp/crp/install.sh --skill backend --project my-app
 
-# 3. Fill all <!-- FILL: --> markers
+# 3. Add more skills (optional — v2.1 multi-skill mode)
+python /tmp/crp/scripts/crp-setup.py skill create frontend --description "Frontend development"
+python /tmp/crp/scripts/crp-setup.py sync
+
+# 4. Fill all <!-- FILL: --> markers
 grep -rn 'FILL:' .claude/skills/backend/
 
-# 4. Self-check
+# 5. Self-check
 bash .claude/skills/backend/scripts/smoke-test.sh backend
 ```
 
@@ -161,25 +166,60 @@ echo '<!-- CRP-ROUTE: see .claude/skills/backend/SKILL.md -->' >> .claude/CLAUDE
 
 ```bash
 # Audit existing rules and generate token baseline
-python scripts/token-audit.py --skill backend --report
+python scripts/crp-setup.py audit --report
+# Or directly:
+# python scripts/token-audit.py --skill backend --report
 
 # Auto-sync all entry proxies after editing gateway.md
-python scripts/sync-shells.py --skill backend
+python scripts/crp-setup.py sync
+# Or directly:
+# python scripts/sync-shells.py --skill backend
 
-# Health check
-python scripts/health-check.py --skill backend
+# Health check + drift detection
+python scripts/crp-setup.py check --drifts
+# Or directly:
+# python scripts/health-check.py --skill backend --drifts
 ```
+
+### CRP Manifest (`crp.yaml`)
+
+v2.1 introduces a project-level manifest that declares skills, project metadata, and configuration:
+
+```yaml
+version: "2.1"
+project:
+  name: my-app
+  description: Context-Router Protocol reference implementation
+skills:
+  - name: backend
+    description: API and business logic
+  - name: frontend
+    description: UI and client-side code
+default_skill: backend
+checks:
+  max_gateway_lines: 100
+  max_proxy_lines: 60
+audit:
+  use_tiktoken: true
+```
+
+The manifest drives:
+- **Multi-skill routing** — Parent gateway (`.claude/skills/SKILL.md`) auto-generated from manifest + child skill frontmatters
+- **Drift detection** — `crp-setup.py check --drifts` validates manifest ↔ directories ↔ generated proxies
+- **Unified CLI** — All operations go through `crp-setup.py`
 
 After installation, your project has these new files (zero intrusion — no existing code touched):
 
 ```
 your-project/
+├── crp.yaml                   ← CRP Manifest (skills, config, defaults)
 ├── .claude/
 │   ├── CLAUDE.md              ← Entry Proxy (≤15 lines, survives compression)
 │   ├── GEMINI.md              ← Gemini-specific entry
 │   ├── hooks/
 │   │   └── session-start.sh   ← Lightweight signal re-injection
 │   └── skills/
+│       ├── SKILL.md           ← Parent Gateway (v2.1 multi-skill router)
 │       ├── backend/           ← Your gateway
 │       │   ├── SKILL.md       ← Router Gateway (≤100 lines)
 │       │   ├── rules/
@@ -195,11 +235,16 @@ your-project/
 │       │   │   ├── smoke-test.sh   ← 48 self-checks
 │       │   │   └── test-trigger.sh
 │       │   └── assets/
+│       ├── frontend/          ← Another skill (v2.1)
+│       │   └── SKILL.md
 │       └── shared/            ← Cross-skill conventions
 ├── .cursor/
 │   ├── rules/workflow.mdc     ← Cursor Rules entry
-│   └── skills/backend/
-│       └── SKILL.md           ← Synced from main gateway
+│   └── skills/
+│       ├── backend/
+│       │   └── SKILL.md
+│       └── frontend/
+│           └── SKILL.md
 └── .codex/
     └── instructions.md        ← Codex entry
 ```
@@ -242,6 +287,23 @@ Token consumption measured on the CRP template itself (`.claude/skills/<skill>/`
 | **Task first-try success rate** | — | — | *Observed in practice* |
 | **Avg. debug rounds per task** | — | — | *Observed in practice* |
 | **Monthly docs maintenance** | — | — | *Observed in practice* |
+
+### Real-World Validation (2026-04-24)
+
+Measured with actual Claude Code CLI sessions (`claude -p --output-format json`) on the `feature` scenario (8 turns: add benchmark subcommand, write tests, run verification).
+
+| Metric | Naive (Monolithic) | CRP (Shard Rules) | Improvement |
+|---|---|---|---|
+| **Calibration input tokens** | 34,391 | 18,220 | **↓ 47.0%** |
+| **Session total input tokens** | 425,280 | 327,319 | **↓ 23.0%** |
+| **Session total output tokens** | 39,341 | 28,791 | **↓ 26.8%** |
+| **Success rate** | 8/8 (100%) | 8/8 (100%) | Equal |
+| **Session duration** | ~21 min | ~18 min | Faster |
+
+**Key findings:**
+- CRP shows **lower variability** (std dev 17,280 vs 25,424), meaning more predictable costs
+- Savings are **task-dependent**: execution tasks (run tests, add features) save up to 60%; summarization tasks may load more context as CRP retrieves previously used rules
+- Real-world session savings (~23%) are roughly half of pure calibration savings (~47%) because user prompts and tool outputs dilute the proportional difference
 
 ### Cost Breakdown (Claude Sonnet 4.6, $3/1M input tokens)
 
@@ -336,9 +398,9 @@ All entry files **must** contain inline routing tables — pure natural-language
 
 ## Roadmap
 
-### v2.0 (Current)
+### v2.0
 - [x] 48-item self-check (`smoke-test.sh`)
-- [x] Cross-platform installer (`install.sh` — BSD/GNU sed compatible)
+- [x] Cross-platform installer (`install.sh` — now thin wrapper around `crp-setup.py`)
 - [x] Lightweight SessionStart hook (signal-based, zero token cost)
 - [x] Built-in token/cost estimation (`scripts/token-audit.py`)
 - [x] Entry proxy auto-generator (`scripts/sync-shells.py`)
@@ -346,13 +408,17 @@ All entry files **must** contain inline routing tables — pure natural-language
 - [x] Health scanner (`scripts/health-check.py`)
 - [x] CI/CD validation workflow
 
-### v2.1 (Next)
-- [ ] `tiktoken` integration for precise token counts
-- [ ] Drift detection: auto-alert when entry proxies diverge from gateway
-- [ ] Interactive setup wizard (`install.sh --interactive`)
-- [ ] Multi-skill orchestration (parent gateway routing to child skills)
+### v2.1 (Current)
+- [x] Unified CLI (`crp-setup.py`): `init`, `skill create/delete/list`, `sync`, `check`, `audit`
+- [x] `crp.yaml` manifest: declarative skill registry with validation
+- [x] Multi-skill orchestration: parent gateway (`.claude/skills/SKILL.md`) routes to child skills
+- [x] `tiktoken` integration for precise token counts (optional dependency)
+- [x] Drift detection (`--drifts`): validates manifest ↔ directories ↔ generated proxies
+- [x] Skill frontmatter extraction (name, description, primary flag)
+- [x] v2.0 backward compatibility: auto-detect single skill when `crp.yaml` absent
 
 ### v2.2 (Future)
+- [ ] Interactive setup wizard (`crp-setup.py init --interactive`)
 - [ ] Runtime telemetry: record actual per-task token consumption
 - [ ] Auto-summarization: compress `gotchas.md` into gateway Known Gotchas when stable
 - [ ] VS Code extension for gateway.md linting and autocomplete
@@ -361,29 +427,7 @@ All entry files **must** contain inline routing tables — pure natural-language
 
 ## Contributing
 
-We welcome PRs that improve CRP's robustness, documentation, or tooling.
-
-### Before Submitting
-
-1. Run the validation suite locally:
-   ```bash
-   bash templates/skill/scripts/smoke-test.sh test-skill
-   python scripts/health-check.py --skill test-skill
-   python scripts/token-audit.py --skill test-skill --report
-   ```
-
-2. Ensure no placeholders remain in templates:
-   ```bash
-   grep -rn '{{NAME}}\|{{PROJECT}}' templates/
-   ```
-
-3. Update `benchmark-report.json` if your changes affect file sizes or structure.
-
-### Code Style
-
-- Shell scripts: `set -euo pipefail`, POSIX-compatible where possible
-- Python: type hints, `pathlib` for paths, argparse for CLI
-- Markdown: 100-line soft limit for gateway files, inline routing tables for entry proxies
+See [CONTRIBUTING.md](CONTRIBUTING.md) for the full guide.
 
 ---
 
