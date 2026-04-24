@@ -125,8 +125,8 @@ class TestSemanticDriftDetection:
         gateway = project / ".claude" / "skills" / "SKILL.md"
         text = gateway.read_text(encoding="utf-8")
         text = text.replace(
-            "| backend | API | `skills/backend/SKILL.md` | * |",
-            "| backend | API | `skills/backend/SKILL.md` | * |\n| extra | Extra skill | `skills/extra/SKILL.md` |  |",
+            "| backend | API | `backend/SKILL.md` | * |",
+            "| backend | API | `backend/SKILL.md` | * |\n| extra | Extra skill | `extra/SKILL.md` |  |",
         )
         gateway.write_text(text, encoding="utf-8")
 

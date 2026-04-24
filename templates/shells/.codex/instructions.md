@@ -7,10 +7,10 @@ Formal docs live under `.claude/skills/`. Read `.claude/skills/{{NAME}}/SKILL.md
 | Task | Required reads | Workflow |
 |------|---------------|----------|
 | Fix bug | `rules/project-rules.md` + `rules/coding-standards.md` | `workflows/fix-bug.md` |
-| Add feature | `rules/project-rules.md` + `rules/coding-standards.md` | `workflows/add-feature.md` |
+| Add feature | `rules/project-rules.md` + `rules/coding-standards.md` + `references/gotchas.md` | `workflows/add-feature.md` |
 | Multi-subtask / long run (≥3 independent subtasks) | `rules/project-rules.md` | `workflows/update-rules.md` |
-| <!-- FILL: add your common task --> | <!-- FILL: required reads --> | <!-- FILL: workflow path --> |
-| Other / unlisted | `rules/project-rules.md` | Check `workflows/` for closest match |
+| <!-- FILL: task --> | <!-- FILL: files --> | <!-- FILL: workflow --> |
+| **Other / unlisted** | `rules/project-rules.md` + `rules/coding-standards.md` | Check `workflows/` for closest match |
 
 ## Auto-Triggers
 

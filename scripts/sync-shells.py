@@ -51,7 +51,7 @@ def _generate_skill_routing_table(skills: list[dict], project_name: str) -> str:
     for skill in skills:
         name = skill["name"]
         desc = skill.get("description", "")
-        entry = f"`skills/{name}/SKILL.md`"
+        entry = f"`.claude/skills/{name}/SKILL.md`"
         lines.append(f"| {name} | {desc} | {entry} |")
 
     default = next(
@@ -158,15 +158,19 @@ def generate_claude_md(skill_name: str, project_name: str, tasks: list[dict]) ->
         "| Task | Required reads | Workflow |",
         "|------|---------------|----------|",
     ]
+    has_fallback = any("other" in t.get("task", "").lower() for t in tasks)
     for t in tasks:
         lines.append(f"| {t['task']} | {t['reads']} | {t['workflow']} |")
+    if not has_fallback:
+        lines += [
+            "| Other / unlisted | `rules/project-rules.md` | Check `workflows/` for closest match |",
+        ]
     lines += [
-        "| Other / unlisted | `rules/project-rules.md` | Check `workflows/` for closest match |",
         "",
         "## Auto-Triggers",
         "",
-        f"- **New task in same session** → re-read `skills/{skill_name}/SKILL.md`, re-match Common Tasks route, re-read all required files. \"I already read it\" is not valid — context compresses, routes differ.",
-        f"- **Before declaring any non-trivial task complete** → run Closure Extraction (see `skills/{skill_name}/workflows/update-rules.md`)",
+        f"- **New task in same session** → re-read `.claude/skills/{skill_name}/SKILL.md`, re-match Common Tasks route, re-read all required files. \"I already read it\" is not valid — context compresses, routes differ.",
+        f"- **Before declaring any non-trivial task complete** → run Task Closure Protocol (see `.claude/skills/{skill_name}/workflows/update-rules.md`)",
         "- Skip only for: formatting-only, comment-only, dependency-version-only, behavior-preserving refactors",
         "",
         "## Red Flags — STOP",
@@ -188,15 +192,19 @@ def generate_cursor_rules(skill_name: str, project_name: str, tasks: list[dict])
         "| Task | Required reads | Workflow |",
         "|------|---------------|----------|",
     ]
+    has_fallback = any("other" in t.get("task", "").lower() for t in tasks)
     for t in tasks:
         lines.append(f"| {t['task']} | {t['reads']} | {t['workflow']} |")
+    if not has_fallback:
+        lines += [
+            "| Other / unlisted | `rules/project-rules.md` | Check `workflows/` for closest match |",
+        ]
     lines += [
-        "| Other | `rules/project-rules.md` | Check `workflows/` for closest match |",
         "",
         "## Mandatory",
         "",
         "1. Re-read `SKILL.md` on every new task — context compresses between tasks.",
-        "2. Run Closure Extraction before declaring any non-trivial task complete.",
+        "2. Run Task Closure Protocol before declaring any non-trivial task complete.",
         "3. If you think \"just this once I'll skip AAR\" — STOP. Do the AAR.",
         "",
     ]
@@ -214,10 +222,14 @@ def generate_gemini_md(skill_name: str, project_name: str, tasks: list[dict]) ->
         "| Task | Required reads | Workflow |",
         "|------|---------------|----------|",
     ]
+    has_fallback = any("other" in t.get("task", "").lower() for t in tasks)
     for t in tasks:
         lines.append(f"| {t['task']} | {t['reads']} | {t['workflow']} |")
+    if not has_fallback:
+        lines += [
+            "| Other / unlisted | `rules/project-rules.md` | Check `workflows/` for closest match |",
+        ]
     lines += [
-        "| Other / unlisted | `rules/project-rules.md` | Check `workflows/` for closest match |",
         "",
         "## Session Refresh",
         "",
@@ -238,15 +250,19 @@ def generate_codex_instructions(skill_name: str, project_name: str, tasks: list[
         "| Task | Required reads | Workflow |",
         "|------|---------------|----------|",
     ]
+    has_fallback = any("other" in t.get("task", "").lower() for t in tasks)
     for t in tasks:
         lines.append(f"| {t['task']} | {t['reads']} | {t['workflow']} |")
+    if not has_fallback:
+        lines += [
+            "| Other / unlisted | `rules/project-rules.md` | Check `workflows/` for closest match |",
+        ]
     lines += [
-        "| Other / unlisted | `rules/project-rules.md` | Check `workflows/` for closest match |",
         "",
         "## Mandatory Checks",
         "",
         "- Re-read `SKILL.md` at the start of every new task.",
-        "- Run Closure Extraction (AAR) before marking any non-trivial task complete.",
+        "- Run Task Closure Protocol (AAR) before marking any non-trivial task complete.",
         "",
     ]
     return "\n".join(lines)
@@ -366,24 +382,36 @@ def run_sync(skill_name: str | None = None, project_name: str | None = None, che
             parent_path = write_parent_gateway(parent_content)
             print(f"[WRITTEN] {parent_path}")
 
-        # Generate multi-skill entry proxies
-        changed = write_multi_skill_shells(skills, project_name, check)
-
-        # Also sync individual skill shells if --skill is provided
-        if skill_name:
+        # For single-skill projects, use task-level routing directly (v2.0 style).
+        # For multi-skill projects, generate skill-level routing entry proxies.
+        if len(skills) == 1:
+            skill_name = skill_name or skills[0].get("name")
             skill_dir = Path(f".claude/skills/{skill_name}")
             gateway_path = skill_dir / "SKILL.md"
-            if gateway_path.exists():
-                result = parse_common_tasks(gateway_path)
-                tasks = result.tasks
-                skill_changed = write_shells(SHELL_GENERATORS, skill_name, project_name, tasks, check)
-                changed += skill_changed
+            if not gateway_path.exists():
+                print(f"ERROR: {gateway_path} not found. Run install.sh first.")
+                return 1
+            result = parse_common_tasks(gateway_path)
+            tasks = result.tasks
+            changed = write_shells(SHELL_GENERATORS, skill_name, project_name, tasks, check)
+        else:
+            changed = write_multi_skill_shells(skills, project_name, check)
+            # Also sync individual skill shells if --skill is provided
+            if skill_name:
+                skill_dir = Path(f".claude/skills/{skill_name}")
+                gateway_path = skill_dir / "SKILL.md"
+                if gateway_path.exists():
+                    result = parse_common_tasks(gateway_path)
+                    tasks = result.tasks
+                    skill_changed = write_shells(SHELL_GENERATORS, skill_name, project_name, tasks, check)
+                    changed += skill_changed
 
         if check:
             print(f"\n{'DRY RUN' if changed else 'ALL CLEAN'}: {changed} file(s) would change.")
             return 1 if changed else 0
 
-        print(f"\n[OK] Synced {changed} file(s) for multi-skill project: {project_name}")
+        mode = "single-skill" if len(skills) == 1 else "multi-skill"
+        print(f"\n[OK] Synced {changed} file(s) for {mode} project: {project_name}")
         return 0
 
     # v2.0 single-skill fallback

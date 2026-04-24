@@ -79,7 +79,7 @@ def generate_parent_gateway(manifest: dict) -> str:
         if desc.startswith("<!--"):
             desc = ""
         default_marker = "*" if name == manifest.get("default_skill") else ""
-        lines.append(f"| {name} | {desc} | `skills/{name}/SKILL.md` | {default_marker} |")
+        lines.append(f"| {name} | {desc} | `{name}/SKILL.md` | {default_marker} |")
 
     lines += [
         "",
