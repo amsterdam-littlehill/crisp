@@ -97,7 +97,7 @@ def _copy_skill_template(
             f.write_text(new_text, encoding="utf-8")
 
 
-def _copy_shells(project_root: Path, skill_name: str, shadow: bool = False, dry_run: bool = False) -> None:
+def _copy_shells(project_root: Path, skill_name: str, project_name: str = "", shadow: bool = False, dry_run: bool = False) -> None:
     """Copy entry proxy shells from templates/shells."""
     shells_src = TEMPLATES_DIR / "shells"
     mappings = {
@@ -118,7 +118,7 @@ def _copy_shells(project_root: Path, skill_name: str, shadow: bool = False, dry_
         if src.exists():
             dst.parent.mkdir(parents=True, exist_ok=True)
             text = src.read_text(encoding="utf-8")
-            text = text.replace("{{NAME}}", skill_name).replace("{{PROJECT}}", skill_name)
+            text = text.replace("{{NAME}}", skill_name).replace("{{PROJECT}}", project_name or skill_name)
             dst.write_text(text, encoding="utf-8")
             print(f"  [COPIED] {dst}")
 
@@ -177,7 +177,12 @@ def cmd_init(args: argparse.Namespace) -> int:
         print(f"[CREATED] {manifest_path}")
 
     if skill_name:
-        _copy_shells(PROJECT_ROOT, skill_name, args.shadow, args.dry_run)
+        _copy_shells(PROJECT_ROOT, skill_name, project_name, args.shadow, args.dry_run)
+        # Create shared/ directory for cross-skill conventions
+        shared_dir = PROJECT_ROOT / ".claude" / "skills" / "shared"
+        if not args.dry_run:
+            shared_dir.mkdir(parents=True, exist_ok=True)
+            (shared_dir / ".gitkeep").touch(exist_ok=True)
         _copy_hooks(PROJECT_ROOT, args.dry_run)
 
         skill_dir = PROJECT_ROOT / ".claude" / "skills" / skill_name

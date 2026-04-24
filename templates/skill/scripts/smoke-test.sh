@@ -106,16 +106,19 @@ echo ""
 # ===== GROUP 4: 占位符清理 (4 checks) =====
 echo "[Group 4/6] Placeholder Cleanup"
 
-FILL_COUNT=$(grep -rn '\<!-- FILL:' "$SKILL_DIR/" ".claude/CLAUDE.md" ".cursor/" ".codex/" 2>/dev/null | wc -l || echo 0)
+FILL_COUNT=$((grep -rsn '\<!-- FILL:' "$SKILL_DIR/" ".claude/CLAUDE.md" ".cursor/" ".codex/" 2>/dev/null || true) | wc -l | tr -d ' ')
 if [[ "$FILL_COUNT" -eq 0 ]]; then
   check "No FILL markers remaining"
 else
   check "$FILL_COUNT FILL markers present" WARN
 fi
 
-PLACEHOLDER_COUNT=$(grep -rn '{{NAME}}\|{{PROJECT}}' "$SKILL_DIR/" ".claude/" ".cursor/" ".codex/" 2>/dev/null | wc -l || echo 0)
+# Use variable concatenation so template replacement doesn't break the grep pattern
+LP='{{'
+RP='}}'
+PLACEHOLDER_COUNT=$((grep -rsn "${LP}NAME${RP}\|${LP}PROJECT${RP}" "$SKILL_DIR/" ".claude/" ".cursor/" ".codex/" 2>/dev/null || true) | wc -l | tr -d ' ')
 if [[ "$PLACEHOLDER_COUNT" -eq 0 ]]; then
-  check "No {{NAME}}/{{PROJECT}} placeholders"
+  check "No placeholder residues"
 else
   check "$PLACEHOLDER_COUNT placeholders present" FAIL
 fi
