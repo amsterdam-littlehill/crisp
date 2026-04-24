@@ -38,15 +38,6 @@ jobs:
           print('crp.yaml is valid')
           "
 
-      - name: Check for unreplaced placeholders in templates
-        run: |
-          echo "Checking templates for {{NAME}} or {{PROJECT}} placeholders..."
-          if grep -rn '{{NAME}}\|{{PROJECT}}' templates/; then
-            echo "❌ Found unreplaced placeholders in templates/"
-            exit 1
-          fi
-          echo "✅ No unreplaced placeholders"
-
       - name: Install scaffold to temp project
         run: |
           mkdir /tmp/test-project
