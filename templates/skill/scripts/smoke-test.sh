@@ -22,8 +22,8 @@ check() {
   ((CHECKS++)) || true
   case "$status" in
     PASS)  echo "  ✅ PASS:  $msg" ;;
-    WARN)  echo "  ⚠️  WARN:  $msg"; ((WARNINGS++)) ;;
-    FAIL)  echo "  ❌ FAIL:  $msg"; ((ERRORS++)) ;;
+    WARN)  echo "  ⚠️  WARN:  $msg"; ((WARNINGS++)) || true ;;
+    FAIL)  echo "  ❌ FAIL:  $msg"; ((ERRORS++)) || true ;;
   esac
 }
 
