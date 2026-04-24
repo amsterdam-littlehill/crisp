@@ -147,6 +147,98 @@ class TestTokenAudit:
         assert result.returncode == 0, result.stderr
         assert "[estimated]" in result.stdout
 
+    def test_rounds_argument_changes_simulation_count(self, tmp_path: Path) -> None:
+        """I6: --rounds should override the default 5-round simulation."""
+        project = tmp_path / "audit"
+        project.mkdir()
+        skill_dir = project / ".claude" / "skills" / "test"
+        skill_dir.mkdir(parents=True)
+        (skill_dir / "SKILL.md").write_text(
+            "---\nname: test\n---\n\n## Common Tasks\n"
+            "| Task | Must read | Workflow |\n"
+            "|------|-----------|----------|\n"
+            "| Fix | rules | workflows/fix.md |\n",
+            encoding="utf-8",
+        )
+
+        result = subprocess.run(
+            [sys.executable, str(SCRIPTS_DIR / "token-audit.py"), "--skill", "test", "--rounds", "3"],
+            cwd=project,
+            capture_output=True,
+            text=True,
+        )
+        assert result.returncode == 0, result.stderr
+        assert "3-round" in result.stdout or "3 round" in result.stdout.lower()
+
+    def test_scenario_argument_uses_custom_task_sequence(self, tmp_path: Path) -> None:
+        """I6: --scenario should override the default task sequence."""
+        project = tmp_path / "audit"
+        project.mkdir()
+        skill_dir = project / ".claude" / "skills" / "test"
+        skill_dir.mkdir(parents=True)
+        (skill_dir / "SKILL.md").write_text(
+            "---\nname: test\n---\n\n## Common Tasks\n"
+            "| Task | Must read | Workflow |\n"
+            "|------|-----------|----------|\n"
+            "| Fix | rules | workflows/fix.md |\n",
+            encoding="utf-8",
+        )
+
+        result = subprocess.run(
+            [
+                sys.executable,
+                str(SCRIPTS_DIR / "token-audit.py"),
+                "--skill",
+                "test",
+                "--scenario",
+                "fix,fix,fix",
+                "--rounds",
+                "3",
+            ],
+            cwd=project,
+            capture_output=True,
+            text=True,
+        )
+        assert result.returncode == 0, result.stderr
+        # With a custom scenario of 3 fix tasks, output should mention the scenario
+        assert "fix" in result.stdout.lower()
+
+
+class TestFromExistingDecoupling:
+    """I2: --from-existing should not suppress template copies."""
+
+    def test_from_existing_copies_missing_shells(self, tmp_path: Path) -> None:
+        """When --from-existing is used, entry proxies should still be created."""
+        project = tmp_path / "existing"
+        project.mkdir()
+
+        # Create a v2.0-style skill directory
+        skill_dir = project / ".claude" / "skills" / "backend"
+        skill_dir.mkdir(parents=True)
+        (skill_dir / "SKILL.md").write_text("# backend\n", encoding="utf-8")
+
+        result = run_crp(project, "init", "--from-existing", "--skill", "backend")
+        assert result.returncode == 0, result.stderr
+        assert (project / ".claude" / "CLAUDE.md").exists()
+
+    def test_from_existing_with_shadow_preserves_existing(self, tmp_path: Path) -> None:
+        """--from-existing --shadow should preserve existing proxy files."""
+        project = tmp_path / "existing"
+        project.mkdir()
+
+        skill_dir = project / ".claude" / "skills" / "backend"
+        skill_dir.mkdir(parents=True)
+        (skill_dir / "SKILL.md").write_text("# backend\n", encoding="utf-8")
+
+        # Create an existing proxy with custom content
+        proxy = project / ".claude" / "CLAUDE.md"
+        proxy.parent.mkdir(parents=True, exist_ok=True)
+        proxy.write_text("# Custom proxy\n", encoding="utf-8")
+
+        result = run_crp(project, "init", "--from-existing", "--skill", "backend", "--shadow")
+        assert result.returncode == 0, result.stderr
+        assert "Custom proxy" in proxy.read_text(encoding="utf-8")
+
 
 class TestDriftDetection:
     def test_detects_missing_parent_gateway(self, tmp_path: Path) -> None:
@@ -195,6 +287,70 @@ class TestDriftDetection:
             text=True,
         )
         assert "Undeclared skill directory" in result.stdout
+
+
+class TestPyprojectDependencies:
+    """I5: pyproject.toml must declare runtime dependencies."""
+
+    def test_pyproject_toml_exists(self) -> None:
+        """Project root must contain pyproject.toml."""
+        assert (CRISP_ROOT / "pyproject.toml").exists(), "pyproject.toml missing"
+
+    def test_declares_pyyaml_dependency(self) -> None:
+        """pyyaml is a runtime dependency used by crp_manifest.py."""
+        text = (CRISP_ROOT / "pyproject.toml").read_text(encoding="utf-8")
+        assert "pyyaml" in text.lower(), "pyyaml not declared in pyproject.toml"
+
+    def test_declares_pytest_dependency(self) -> None:
+        """pytest is needed to run the test suite."""
+        text = (CRISP_ROOT / "pyproject.toml").read_text(encoding="utf-8")
+        assert "pytest" in text.lower(), "pytest not declared in pyproject.toml"
+
+
+class TestCommonTasksParse:
+    """I1/I3: parse_common_tasks must return ParseResult with found/empty validation."""
+
+    def test_parse_result_for_valid_tasks(self, tmp_path: Path) -> None:
+        """Valid Common Tasks table → found=True, tasks populated."""
+        from crp_gateway import parse_common_tasks
+
+        gateway = tmp_path / "SKILL.md"
+        gateway.write_text(
+            "# Skill\n\n## Common Tasks\n| Task | Must read | Workflow |\n"
+            "|------|-----------|----------|\n"
+            "| Fix | rules | workflows/fix.md |\n",
+            encoding="utf-8",
+        )
+        result = parse_common_tasks(gateway)
+        assert result.found is True
+        assert len(result.tasks) == 1
+        assert result.tasks[0]["task"] == "Fix"
+
+    def test_parse_result_when_section_missing(self, tmp_path: Path) -> None:
+        """Missing Common Tasks section → found=False, empty tasks, message set."""
+        from crp_gateway import parse_common_tasks
+
+        gateway = tmp_path / "SKILL.md"
+        gateway.write_text("# Skill\n\nNo common tasks here.\n", encoding="utf-8")
+        result = parse_common_tasks(gateway)
+        assert result.found is False
+        assert result.tasks == []
+        assert "Common Tasks" in result.message
+
+    def test_parse_result_when_table_empty(self, tmp_path: Path) -> None:
+        """Empty Common Tasks table → found=True, empty tasks, no error message."""
+        from crp_gateway import parse_common_tasks
+
+        gateway = tmp_path / "SKILL.md"
+        gateway.write_text(
+            "# Skill\n\n## Common Tasks\n| Task | Must read | Workflow |\n"
+            "|------|-----------|----------|\n",
+            encoding="utf-8",
+        )
+        result = parse_common_tasks(gateway)
+        assert result.found is True
+        assert result.tasks == []
+        assert result.message == ""
 
 
 class TestValidateCommand:

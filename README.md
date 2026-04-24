@@ -8,8 +8,8 @@
 </p>
 
 <p align="center">
-  <a href="#"><img src="https://img.shields.io/badge/token--efficiency-%E2%86%9377%25-00d4aa?style=flat-square"></a>
-  <a href="#"><img src="https://img.shields.io/badge/cost--savings-%E2%86%9377%25-58a6ff?style=flat-square"></a>
+  <a href="#"><img src="https://img.shields.io/badge/token--efficiency-%E2%86%9347%25-00d4aa?style=flat-square"></a>
+  <a href="#"><img src="https://img.shields.io/badge/cost--savings-%E2%86%9327%25-58a6ff?style=flat-square"></a>
   <a href="https://github.com/amsterdam-littlehill/crisp/blob/main/LICENSE"><img src="https://img.shields.io/github/license/amsterdam-littlehill/crisp?style=flat-square&color=8b949e"></a>
 </p>
 
@@ -287,6 +287,23 @@ Token consumption measured on the CRP template itself (`.claude/skills/<skill>/`
 | **Task first-try success rate** | — | — | *Observed in practice* |
 | **Avg. debug rounds per task** | — | — | *Observed in practice* |
 | **Monthly docs maintenance** | — | — | *Observed in practice* |
+
+### Real-World Validation (2026-04-24)
+
+Measured with actual Claude Code CLI sessions (`claude -p --output-format json`) on the `feature` scenario (8 turns: add benchmark subcommand, write tests, run verification).
+
+| Metric | Naive (Monolithic) | CRP (Shard Rules) | Improvement |
+|---|---|---|---|
+| **Calibration input tokens** | 34,391 | 18,220 | **↓ 47.0%** |
+| **Session total input tokens** | 425,280 | 327,319 | **↓ 23.0%** |
+| **Session total output tokens** | 39,341 | 28,791 | **↓ 26.8%** |
+| **Success rate** | 8/8 (100%) | 8/8 (100%) | Equal |
+| **Session duration** | ~21 min | ~18 min | Faster |
+
+**Key findings:**
+- CRP shows **lower variability** (std dev 17,280 vs 25,424), meaning more predictable costs
+- Savings are **task-dependent**: execution tasks (run tests, add features) save up to 60%; summarization tasks may load more context as CRP retrieves previously used rules
+- Real-world session savings (~23%) are roughly half of pure calibration savings (~47%) because user prompts and tool outputs dilute the proportional difference
 
 ### Cost Breakdown (Claude Sonnet 4.6, $3/1M input tokens)
 

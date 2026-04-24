@@ -125,8 +125,8 @@ class TestSemanticDriftDetection:
         gateway = project / ".claude" / "skills" / "SKILL.md"
         text = gateway.read_text(encoding="utf-8")
         text = text.replace(
-            "| backend | API |",
-            "| backend | API | `skills/backend/SKILL.md` |\n| extra | Extra skill | `skills/extra/SKILL.md` |",
+            "| backend | API | `skills/backend/SKILL.md` | * |",
+            "| backend | API | `skills/backend/SKILL.md` | * |\n| extra | Extra skill | `skills/extra/SKILL.md` |  |",
         )
         gateway.write_text(text, encoding="utf-8")
 
@@ -246,6 +246,63 @@ class TestDescriptionConsistency:
         assert "description" in result.stdout.lower()
 
 
+class TestStateIsolation:
+    """Module-level ISSUES/WARNINGS must not leak between run_check calls."""
+
+    def test_no_state_accumulation_between_calls(self, tmp_path: Path) -> None:
+        """If run_check is called twice, the second call must not see state from the first."""
+        import importlib.util
+        import os
+        import sys
+
+        sys.path.insert(0, str(SCRIPTS_DIR))
+        spec = importlib.util.spec_from_file_location("health_check", SCRIPTS_DIR / "health-check.py")
+        assert spec is not None and spec.loader is not None
+        hc = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(hc)
+
+        project = tmp_path / "state_test"
+        project.mkdir()
+        manifest = {
+            "version": "2.1",
+            "project": {"name": "st"},
+            "skills": [{"name": "backend"}],
+        }
+        import yaml
+
+        with open(project / "crp.yaml", "w", encoding="utf-8") as fh:
+            yaml.safe_dump(manifest, fh)
+
+        skill_dir = project / ".claude" / "skills" / "backend"
+        skill_dir.mkdir(parents=True)
+        (skill_dir / "SKILL.md").write_text(
+            "---\nname: backend\n---\n\n# backend\n",
+            encoding="utf-8",
+        )
+        # Create a file with a broken link so check_link_integrity emits an ERROR
+        (skill_dir / "refs.md").write_text("See `nonexistent.md`\n", encoding="utf-8")
+
+        old_cwd = os.getcwd()
+        try:
+            os.chdir(project)
+            hc.ISSUES.clear()
+            hc.WARNINGS.clear()
+
+            rc1 = hc.run_check(skill_name="backend")
+            issues_after_call1 = len(hc.ISSUES)
+
+            rc2 = hc.run_check(skill_name="backend")
+            issues_after_call2 = len(hc.ISSUES)
+
+            # After fix, both calls should see the same number of issues
+            assert issues_after_call2 == issues_after_call1, (
+                f"State leaked between calls: call1 had {issues_after_call1} issues, "
+                f"call2 had {issues_after_call2}"
+            )
+        finally:
+            os.chdir(old_cwd)
+
+
 class TestFixMode:
     """--fix must not silently ignore the flag."""
 
@@ -321,3 +378,85 @@ class TestFixMode:
         result = run_health_check(project, "--drifts", "--fix")
         # Should at least mention fix or regeneration in output, or error about stdin
         assert "fix" in result.stdout.lower() or "regenerat" in result.stdout.lower() or result.returncode in (0, 1)
+
+
+class TestLinkIntegrity:
+    """Link checking must cover entry proxies and prevent path traversal."""
+
+    def test_detects_broken_link_in_entry_proxy(self, tmp_path: Path) -> None:
+        """If an entry proxy like .claude/CLAUDE.md has a broken link, report it."""
+        project = tmp_path / "proxy_link"
+        project.mkdir()
+        manifest = {
+            "version": "2.1",
+            "project": {"name": "pl-test"},
+            "skills": [{"name": "backend", "description": "API"}],
+            "default_skill": "backend",
+        }
+        import yaml
+
+        with open(project / "crp.yaml", "w", encoding="utf-8") as fh:
+            yaml.safe_dump(manifest, fh)
+
+        skill_dir = project / ".claude" / "skills" / "backend"
+        skill_dir.mkdir(parents=True)
+        (skill_dir / "SKILL.md").write_text(
+            "---\nname: backend\ndescription: API\n---\n\n# backend\n",
+            encoding="utf-8",
+        )
+
+        # Generate proxies
+        subprocess.run(
+            [sys.executable, str(SCRIPTS_DIR / "sync-shells.py")],
+            cwd=project,
+            capture_output=True,
+            text=True,
+        )
+
+        # Insert a broken link into CLAUDE.md that references a project-root file
+        proxy = project / ".claude" / "CLAUDE.md"
+        text = proxy.read_text(encoding="utf-8")
+        text += "\nSee `nonexistent_root_file.md`\n"
+        proxy.write_text(text, encoding="utf-8")
+
+        result = run_health_check(project, "--skill", "backend")
+        assert "nonexistent_root_file" in result.stdout
+
+
+class TestFileSizeScope:
+    """File size checks must cover all skills and proxies in multi-skill mode."""
+
+    def test_checks_all_skills_in_multi_skill_project(self, tmp_path: Path) -> None:
+        """When multiple skills exist, every skill directory must be checked."""
+        project = tmp_path / "multi"
+        project.mkdir()
+        manifest = {
+            "version": "2.1",
+            "project": {"name": "multi-test"},
+            "skills": [
+                {"name": "backend", "description": "API"},
+                {"name": "frontend", "description": "UI"},
+            ],
+            "default_skill": "backend",
+        }
+        import yaml
+
+        with open(project / "crp.yaml", "w", encoding="utf-8") as fh:
+            yaml.safe_dump(manifest, fh)
+
+        # Create two skills, each with an oversized .md file
+        for name in ("backend", "frontend"):
+            skill_dir = project / ".claude" / "skills" / name
+            skill_dir.mkdir(parents=True)
+            (skill_dir / "SKILL.md").write_text(
+                "---\nname: {}\ndescription: {}\n---\n\n# {}\n".format(name, name, name),
+                encoding="utf-8",
+            )
+            # Create an oversized reference file (>500 lines)
+            big_content = "\n".join(f"line {i}" for i in range(550))
+            (skill_dir / "big.md").write_text(big_content, encoding="utf-8")
+
+        result = run_health_check(project)
+        # Both skills' oversized files should be reported
+        assert "backend" in result.stdout
+        assert "frontend" in result.stdout

@@ -25,6 +25,7 @@ import sys
 from datetime import datetime
 from pathlib import Path
 
+from crp_gateway import generate_parent_gateway
 from crp_manifest import (
     load_manifest,
     validate_manifest,
@@ -35,14 +36,17 @@ from crp_manifest import (
 
 ISSUES: list[str] = []
 WARNINGS: list[str] = []
+INFOS: list[str] = []
 
 
 def emit(level: str, msg: str) -> None:
     """Emit a simple one-line message."""
     if level == "ERROR":
         ISSUES.append(msg)
-    else:
+    elif level == "WARNING":
         WARNINGS.append(msg)
+    else:
+        INFOS.append(msg)
     print(f"  [{level}] {msg}")
 
 
@@ -57,8 +61,10 @@ def emit_full(level: str, problem: str, impact: str, fix: str) -> None:
     full_msg = f"{problem}\n         Impact: {impact}\n         Fix:    {fix}"
     if level == "ERROR":
         ISSUES.append(full_msg)
-    else:
+    elif level == "WARNING":
         WARNINGS.append(full_msg)
+    else:
+        INFOS.append(full_msg)
     print(f"  [{level}] {problem}")
     print(f"         Impact: {impact}")
     print(f"         Fix:    {fix}")
@@ -113,15 +119,64 @@ def check_file_sizes(skill_dir: Path, shells: list[Path], max_gateway: int = DEF
             )
 
 
-def check_link_integrity(skill_dir: Path) -> None:
+def check_link_integrity(skill_dir: Path, project_root: Path | None = None) -> None:
     """Find all `path/to/file.md` references and verify they exist."""
+    if project_root is None:
+        project_root = skill_dir.resolve().parents[1]
     for md_file in skill_dir.rglob("*.md"):
         text = md_file.read_text(encoding="utf-8")
         refs = re.findall(r"`([^`]+\.(?:md|mdc|sh|py))`", text)
         for ref in refs:
+            if ref.startswith(("http://", "https://", "#")):
+                continue
             target = skill_dir / ref
-            if not target.exists():
+            resolved = target.resolve()
+            try:
+                resolved.relative_to(project_root)
+            except ValueError:
                 rel = md_file.relative_to(skill_dir)
+                emit_full(
+                    "WARN",
+                    f"Suspicious link in {rel}: `{ref}` escapes project directory",
+                    "Potential path traversal or information disclosure",
+                    "Use a path within the project directory",
+                )
+                continue
+            if not resolved.exists():
+                rel = md_file.relative_to(skill_dir)
+                emit_full(
+                    "ERROR",
+                    f"Broken link in {rel}: `{ref}` not found",
+                    "Users see dead references; documentation rot",
+                    "Fix the link path or create the target file",
+                )
+
+
+def check_proxy_link_integrity(project_root: Path, shells: list[Path]) -> None:
+    """Check links in entry proxy files (e.g., .claude/CLAUDE.md)."""
+    for proxy in shells:
+        if not proxy.exists():
+            continue
+        text = proxy.read_text(encoding="utf-8")
+        refs = re.findall(r"`([^`]+\.(?:md|mdc|sh|py))`", text)
+        for ref in refs:
+            if ref.startswith(("http://", "https://", "#")):
+                continue
+            target = project_root / ref
+            resolved = target.resolve()
+            try:
+                resolved.relative_to(project_root)
+            except ValueError:
+                rel = proxy.resolve().relative_to(project_root)
+                emit_full(
+                    "WARN",
+                    f"Suspicious link in {rel}: `{ref}` escapes project directory",
+                    "Potential path traversal or information disclosure",
+                    "Use a path within the project directory",
+                )
+                continue
+            if not resolved.exists():
+                rel = proxy.resolve().relative_to(project_root)
                 emit_full(
                     "ERROR",
                     f"Broken link in {rel}: `{ref}` not found",
@@ -248,8 +303,13 @@ def _extract_markdown_table_rows(content: str, required_headers: list[str]) -> l
             if not row_line.startswith("|"):
                 break
 
-            row_cells = [c.strip() for c in row_line.split("|")]
-            row_cells = [c for c in row_cells if c]
+            raw_cells = row_line.split("|")
+            # Remove only the first/last empty strings produced by split("|")
+            if raw_cells and raw_cells[0] == "":
+                raw_cells = raw_cells[1:]
+            if raw_cells and raw_cells[-1] == "":
+                raw_cells = raw_cells[:-1]
+            row_cells = [c.strip() for c in raw_cells]
 
             # Skip separator-like rows
             if all(re.match(r"^[\s\-:]+$", c) for c in row_cells):
@@ -350,12 +410,6 @@ def check_parent_gateway_drift(fix: bool = False) -> list[str]:
         )
         return [str(parent_gateway)]
 
-    try:
-        generate_parent_gateway, *_ = _load_sync_shells()
-    except ImportError:
-        emit("ERROR", "Cannot load sync-shells.py for drift comparison")
-        return []
-
     expected_content = generate_parent_gateway(manifest)
     actual_content = parent_gateway.read_text(encoding="utf-8")
 
@@ -368,8 +422,8 @@ def check_parent_gateway_drift(fix: bool = False) -> list[str]:
         )
 
     # Extract skill navigation tables semantically
-    expected_rows = _extract_markdown_table_rows(expected_content, ["Skill", "Description", "Entry"])
-    actual_rows = _extract_markdown_table_rows(actual_content, ["Skill", "Description", "Entry"])
+    expected_rows = _extract_markdown_table_rows(expected_content, ["Skill", "Description", "Entry", "Default"])
+    actual_rows = _extract_markdown_table_rows(actual_content, ["Skill", "Description", "Entry", "Default"])
 
     expected_by_skill = {r["Skill"]: r for r in expected_rows}
     actual_by_skill = {r["Skill"]: r for r in actual_rows}
@@ -555,6 +609,9 @@ def check_description_consistency() -> list[str]:
 
 def run_check(skill_name: str | None = None, fix: bool = False, drifts: bool = False) -> int:
     """Core health check logic. Called by main() and by crp-setup.py."""
+    ISSUES.clear()
+    WARNINGS.clear()
+    INFOS.clear()
     manifest = load_manifest(Path("crp.yaml"))
     is_v21 = bool(manifest and manifest.get("version") == "2.1")
 
@@ -632,17 +689,36 @@ def run_check(skill_name: str | None = None, fix: bool = False, drifts: bool = F
         Path(".cursor/rules/workflow.mdc"),
     ]
 
-    print(f"== Health Check: {skill_name} ==\n")
+    project_root = Path(".").resolve()
 
-    check_file_sizes(skill_dir, shells, max_gateway, max_proxy)
-    check_link_integrity(skill_dir)
-    check_gotchas_empty(skill_dir)
-    check_deprecated_rules(skill_dir)
-    check_placeholders(skill_dir, shells)
+    # Determine skills to check
+    skills_to_check: list[Path] = []
+    if is_v21 and manifest:
+        for s in manifest.get("skills", []):
+            if isinstance(s, dict):
+                name = s.get("name")
+                if name:
+                    sdir = Path(f".claude/skills/{name}")
+                    if sdir.exists():
+                        skills_to_check.append(sdir)
+    else:
+        skills_to_check = [skill_dir]
+
+    for sdir in skills_to_check:
+        print(f"== Health Check: {sdir.name} ==\n")
+        check_file_sizes(sdir, shells, max_gateway, max_proxy)
+        check_link_integrity(sdir, project_root)
+        check_gotchas_empty(sdir)
+        check_deprecated_rules(sdir)
+        check_placeholders(sdir, shells)
+
+    check_proxy_link_integrity(project_root, shells)
 
     print(f"\n== Summary ==")
     print(f"Errors:   {len(ISSUES)}")
     print(f"Warnings: {len(WARNINGS)}")
+    if INFOS:
+        print(f"Infos:    {len(INFOS)}")
 
     if ISSUES:
         print("\n[FAIL] FAILED - fix errors before continuing")

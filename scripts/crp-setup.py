@@ -69,12 +69,18 @@ def _validate_skill_name(name: str) -> str:
     return normalized
 
 
-def _copy_skill_template(target_dir: Path, name: str, description: str, project: str) -> None:
+def _copy_skill_template(
+    target_dir: Path, name: str, description: str, project: str, shadow: bool = False
+) -> None:
     """Copy templates/skill/* to target_dir and replace placeholders."""
     src = TEMPLATES_DIR / "skill"
     if not src.exists():
         print(f"ERROR: Template directory not found: {src}")
         sys.exit(1)
+
+    if shadow and target_dir.exists():
+        print(f"  [SHADOW] preserving existing skill directory {target_dir}")
+        return
 
     shutil.copytree(src, target_dir, dirs_exist_ok=True)
 
@@ -170,7 +176,7 @@ def cmd_init(args: argparse.Namespace) -> int:
         save_manifest(manifest_path, manifest)
         print(f"[CREATED] {manifest_path}")
 
-    if not args.from_existing and skill_name:
+    if skill_name:
         _copy_shells(PROJECT_ROOT, skill_name, args.shadow, args.dry_run)
         _copy_hooks(PROJECT_ROOT, args.dry_run)
 
@@ -178,7 +184,7 @@ def cmd_init(args: argparse.Namespace) -> int:
         if args.dry_run:
             print(f"  [DRY RUN] would copy skill template to {skill_dir}")
         else:
-            _copy_skill_template(skill_dir, skill_name, "", project_name)
+            _copy_skill_template(skill_dir, skill_name, "", project_name, args.shadow)
             print(f"  [CREATED] skill: {skill_dir}")
 
     print(f"\nInit complete: {project_name}")

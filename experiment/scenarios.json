@@ -1,0 +1,46 @@
+{
+  "scenarios": [
+    {
+      "name": "feature",
+      "description": "Add benchmark subcommand to crp-setup.py",
+      "turns": [
+        "Add a new `benchmark` subcommand to `crp-setup.py`. It should accept `--skill-a` and `--skill-b` arguments, run the token audit on both, and print a markdown comparison table. Follow the existing command structure.",
+        "Use the existing `token-audit.py` logic via import, don't shell out.",
+        "The table should show: skill name, naive tokens, CRP tokens, savings %, and estimated cost.",
+        "Add a `--output json` option too.",
+        "Looks good. Now add a test in `tests/test_integration.py` for this new command.",
+        "The test should use a temporary directory with two minimal skill structures.",
+        "Run the test to verify it passes.",
+        "Good. Summarize what you changed."
+      ]
+    },
+    {
+      "name": "fixbug",
+      "description": "Fix severity case sensitivity in health-check.py",
+      "turns": [
+        "There's a bug in `scripts/health-check.py`. The `emit()` function doesn't normalize the `severity` parameter -- if you pass `\"warning\"` (lowercase) it fails to match the expected `\"WARNING\"`. Find and fix it.",
+        "Also add a test that covers this case.",
+        "The test should verify that `\"warning\"`, `\"Warning\"`, and `\"WARNING\"` all produce the same result.",
+        "Run the test to confirm it passes.",
+        "Check if there are other places in the file with similar case-sensitivity issues.",
+        "Fix any you find.",
+        "Run the full test suite to make sure nothing broke.",
+        "Good. What was the root cause?"
+      ]
+    },
+    {
+      "name": "chat",
+      "description": "Review token audit methodology and propose improvements",
+      "turns": [
+        "Review the token estimation methodology in `scripts/token-audit.py`. What's the biggest weakness and how would you fix it?",
+        "Explain why `len(text) // 4` is problematic for mixed Chinese-English content.",
+        "Propose a concrete replacement that handles CJK characters better without requiring tiktoken.",
+        "Would your approach change the reported 77% savings figure? Estimate by how much.",
+        "What other files in this project would benefit from the same fix?",
+        "Apply your fix to `scripts/token-audit.py` and `scripts/benchmark.py`.",
+        "Run both scripts to verify they still work.",
+        "Summarize the changes and the new estimated savings range."
+      ]
+    }
+  ]
+}

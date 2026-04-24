@@ -98,7 +98,13 @@ def parse_common_tasks(gateway_path: Path) -> dict[str, list[str]]:
     return tasks
 
 
-def audit_skill(skill_dir: Path, skill_name: str, use_tiktoken: bool = True) -> dict:
+def audit_skill(
+    skill_dir: Path,
+    skill_name: str,
+    use_tiktoken: bool = True,
+    rounds: int = 5,
+    scenario: list[str] | None = None,
+) -> dict:
     gateway = skill_dir / "SKILL.md"
     if not gateway.exists():
         print(f"ERROR: {gateway} not found")
@@ -120,8 +126,14 @@ def audit_skill(skill_dir: Path, skill_name: str, use_tiktoken: bool = True) -> 
 
     per_task["other_unlisted"] = l0_tokens + gateway_tokens
 
-    round_tasks = ["fix_bug", "add_feature", "other_unlisted", "fix_bug", "add_feature"]
-    session_naive = naive_total * 5
+    if scenario:
+        round_tasks = scenario
+    else:
+        default_pattern = ["fix_bug", "add_feature", "other_unlisted"]
+        repeats = (rounds // len(default_pattern)) + 1
+        round_tasks = (default_pattern * repeats)[:rounds]
+
+    session_naive = naive_total * rounds
     session_crp = sum(per_task.get(t, per_task["other_unlisted"]) for t in round_tasks)
 
     cost_naive = (session_naive / 1_000_000) * DEFAULT_COST_PER_1M_TOKENS
@@ -193,7 +205,12 @@ def get_skills_to_audit(skill_name: str | None = None) -> list[tuple[str, Path]]
     sys.exit(1)
 
 
-def run_audit(skill_name: str | None = None, report: bool = False) -> int:
+def run_audit(
+    skill_name: str | None = None,
+    report: bool = False,
+    rounds: int = 5,
+    scenario: list[str] | None = None,
+) -> int:
     """Core audit logic. Called by main() and by crp-setup.py."""
     manifest = load_manifest(Path("crp.yaml"))
     use_tiktoken = True
@@ -209,7 +226,7 @@ def run_audit(skill_name: str | None = None, report: bool = False) -> int:
             print(f"ERROR: Skill directory not found: {skill_dir}")
             return 1
 
-        result = audit_skill(skill_dir, name, use_tiktoken)
+        result = audit_skill(skill_dir, name, use_tiktoken, rounds, scenario)
 
         print(f"\n== Token Audit: {name} ==\n")
         print(f"Estimation method: {result['method']}")
@@ -221,7 +238,7 @@ def run_audit(skill_name: str | None = None, report: bool = False) -> int:
             print(f"  {task:20s} {tokens:>8,} tokens")
 
         sr = result["session_5rounds"]
-        print(f"\n5-round session simulation:")
+        print(f"\n{rounds}-round session simulation:")
         print(f"  Naive total:  {sr['naive_total_tokens']:,} tokens")
         print(f"  CRP total:    {sr['crp_total_tokens']:,} tokens")
         print(f"  Savings:      {sr['savings_percent']}%")
@@ -249,7 +266,7 @@ def run_audit(skill_name: str | None = None, report: bool = False) -> int:
         if not skill_dir.exists():
             print(f"WARNING: Skill directory not found: {skill_dir}")
             continue
-        result = audit_skill(skill_dir, name, use_tiktoken)
+        result = audit_skill(skill_dir, name, use_tiktoken, rounds, scenario)
         all_results[name] = result
         sr = result["session_5rounds"]
         total_naive += sr["naive_total_tokens"]
@@ -302,9 +319,12 @@ def main() -> int:
     parser = argparse.ArgumentParser(description="Token audit for CRP vs naive loading")
     parser.add_argument("--skill", default=None, help="Skill name (auto-detect if omitted)")
     parser.add_argument("--report", action="store_true", help="Write JSON to benchmark-report.json")
+    parser.add_argument("--rounds", type=int, default=5, help="Simulation round count (default: 5)")
+    parser.add_argument("--scenario", default=None, help="Comma-separated custom task sequence")
     args = parser.parse_args()
 
-    return run_audit(args.skill, args.report)
+    scenario = args.scenario.split(",") if args.scenario else None
+    return run_audit(args.skill, args.report, args.rounds, scenario)
 
 
 if __name__ == "__main__":
