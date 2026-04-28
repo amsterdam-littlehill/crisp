@@ -1,10 +1,11 @@
 import { existsSync, readFileSync, statSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
+import { printError, printOk, printWarn } from "../lib/cli/format";
+import { getSkillSourceDirs } from "../lib/crp/skill-source";
 import { generateKnowledgeGraph } from "../lib/kg/generator";
 import { validateKg } from "../lib/kg/validator";
 import { loadManifest } from "../lib/manifest/io";
 import type { CrpManifest } from "../lib/manifest/types";
-import { getSkillSourceDirs } from "../lib/crp/skill-source";
 
 function findSkillDir(name: string): string | null {
 	const dirs = getSkillSourceDirs();
@@ -29,7 +30,7 @@ export function cmdKgSync(options: { skill?: string | null }): number {
 		: skills;
 
 	if (targetSkills.length === 0) {
-		console.error("ERROR: No skills found to sync KG for.");
+		printError("No skills found to sync KG for.");
 		return 1;
 	}
 
@@ -37,7 +38,7 @@ export function cmdKgSync(options: { skill?: string | null }): number {
 	for (const skill of targetSkills) {
 		const skillDir = findSkillDir(skill.name);
 		if (!skillDir) {
-			console.warn(`WARNING: Skill directory not found for: ${skill.name}`);
+			printWarn(`Skill directory not found for: ${skill.name}`);
 			continue;
 		}
 		console.log(`\n== Generating KG: ${skill.name} (${skillDir}) ==`);
@@ -49,8 +50,10 @@ export function cmdKgSync(options: { skill?: string | null }): number {
 	}
 
 	if (!anySuccess) {
-		console.error(
-			"ERROR: No skills could be processed. Ensure skill directories exist under .claude/skills/ or ~/.claude/skills/",
+		printError(
+			"No skills could be processed.",
+			"Cannot generate knowledge graph",
+			"Ensure skill directories exist under .claude/skills/ or ~/.claude/skills/",
 		);
 		return 1;
 	}
@@ -60,17 +63,17 @@ export function cmdKgSync(options: { skill?: string | null }): number {
 
 export function cmdKgValidate(path: string): number {
 	if (!existsSync(path)) {
-		console.error(`ERROR: File not found: ${path}`);
+		printError(`File not found: ${path}`);
 		return 1;
 	}
 	const kg = JSON.parse(readFileSync(path, "utf-8"));
 	const errors = validateKg(kg);
 	if (errors.length > 0) {
 		for (const err of errors) {
-			console.log(`[ERROR] ${err}`);
+			printError(err);
 		}
 		return 1;
 	}
-	console.log("[OK] KG is valid");
+	printOk("KG is valid");
 	return 0;
 }

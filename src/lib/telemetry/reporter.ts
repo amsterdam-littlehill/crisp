@@ -122,8 +122,8 @@ export function runReport(skillName?: string | null): number {
 		console.log(`  ${f}: ${count} loads`);
 	}
 
-	const kgPath = join(".crisp", "kg", ".crp-kg.json");
-	const sessionPath = join(".crisp", "session", "state.json");
+	const kgPath = join(".crp", "kg", ".crp-kg.json");
+	const sessionPath = join(".crp", "session", "state.json");
 	if (existsSync(kgPath) && existsSync(sessionPath)) {
 		const skipEvents = deriveSkipEvents(kgPath, sessionPath, skillName);
 		if (skipEvents.length > 0) {

@@ -8,8 +8,8 @@ import {
 	writeFileSync,
 } from "node:fs";
 import { join } from "node:path";
-import { getEncoding } from "js-tiktoken";
 import type { CrpManifest } from "../manifest/types";
+import { estimateTokens as estimateTokensRaw } from "../tokens";
 import {
 	extractDependencyMarkers,
 	extractSummary,
@@ -19,30 +19,15 @@ import {
 import type { KnowledgeGraph } from "./validator";
 import { validateKg } from "./validator";
 
-let enc: ReturnType<typeof getEncoding> | null = null;
-function getEnc() {
-	if (!enc) {
-		try {
-			enc = getEncoding("cl100k_base");
-		} catch {
-			/* unavailable */
-		}
-	}
-	return enc;
-}
-
 function estimateTokens(
 	text: string,
 	useTiktoken: boolean = true,
 ): [number, string] {
 	if (useTiktoken) {
-		const encoder = getEnc();
-		if (encoder) {
-			try {
-				return [encoder.encode(text).length, "[exact]"];
-			} catch {
-				/* fall through */
-			}
+		try {
+			return [estimateTokensRaw(text), "[exact]"];
+		} catch {
+			/* fall through */
 		}
 	}
 	return [Math.floor(text.length / 4), "[estimated]"];

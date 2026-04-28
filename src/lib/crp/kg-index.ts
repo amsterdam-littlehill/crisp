@@ -7,6 +7,7 @@ import {
 } from "node:fs";
 import { dirname, join } from "node:path";
 import type { KnowledgeGraph } from "../kg/validator";
+import { loadManifest } from "../manifest/io";
 import { estimateTokens } from "./injection";
 
 export interface KgChunk {
@@ -115,6 +116,18 @@ export function loadKgIndex(
 	}
 }
 
+function escapeRegex(str: string): string {
+	return str.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+function isTopicMatch(query: string, topic: string): boolean {
+	const q = query.toLowerCase();
+	const t = topic.toLowerCase();
+	if (q === t) return true;
+	const regex = new RegExp(`\\b${escapeRegex(q)}\\b`);
+	return regex.test(t);
+}
+
 export function queryKg(
 	topic: string,
 	maxTokens: number = 200,
@@ -125,11 +138,22 @@ export function queryKg(
 		return `No KG index found for topic: ${topic}`;
 	}
 
+	// Load maxTokens from manifest if available
+	const manifestPath = join(projectDir, "crp.yaml");
+	let manifestMaxTokens: number | undefined;
+	try {
+		const manifest = loadManifest(manifestPath);
+		manifestMaxTokens = manifest.crp?.kg?.max_query_tokens;
+	} catch {
+		// ignore manifest load errors
+	}
+	const effectiveMaxTokens = manifestMaxTokens ?? maxTokens;
+
 	const query = topic.toLowerCase();
 
-	// Find chunks matching topic
+	// Find chunks matching topic using word-boundary matching
 	const matched = index.chunks.filter((chunk) =>
-		chunk.topics.some((t) => t.includes(query) || query.includes(t)),
+		chunk.topics.some((t) => isTopicMatch(query, t)),
 	);
 
 	if (matched.length === 0) {
@@ -141,7 +165,7 @@ export function queryKg(
 	let totalTokens = 0;
 
 	for (const chunk of matched) {
-		if (totalTokens + chunk.tokens > maxTokens) break;
+		if (totalTokens + chunk.tokens > effectiveMaxTokens) break;
 		result.push(chunk.content);
 		totalTokens += chunk.tokens;
 	}

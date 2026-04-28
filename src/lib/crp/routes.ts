@@ -50,7 +50,8 @@ export function generateRoutes(
 		if (strategy === "inline") {
 			const skillPath = findSkillPath(freq.name);
 			if (skillPath) {
-				const summary = compressSkill(skillPath);
+				const maxSupplyTokens = manifest.crp?.kg?.index_inline_tokens ?? 80;
+				const summary = compressSkill(skillPath, maxSupplyTokens);
 				if (summary.summary) {
 					routeSkill.summary = summary.summary;
 				}

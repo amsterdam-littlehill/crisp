@@ -38,7 +38,7 @@ export function cmdCrpSync(options: SyncOptions = {}): number {
 	const manifestPath = join(crpDir, "crp.yaml");
 
 	// Load manifest for thresholds
-	const manifest = (loadManifest(manifestPath) || {}) as CrpManifest;
+	const manifest = loadManifest(manifestPath);
 	const windowDays = manifest.crp?.telemetry?.window_days ?? 30;
 
 	// Analyze reads
@@ -56,7 +56,7 @@ export function cmdCrpSync(options: SyncOptions = {}): number {
 				freq: 0,
 				sessions: 0,
 				totalSessions:
-					freqMap.size > 0
+					frequencies.length > 0
 						? Math.max(...frequencies.map((f) => f.totalSessions))
 						: 0,
 				source: sk.source,
@@ -83,7 +83,7 @@ export function cmdCrpSync(options: SyncOptions = {}): number {
 	const kgTopics: string[] = [];
 
 	// Generate routes
-	const routes = generateRoutes(manifest, filtered, kgTopics);
+	const routes = generateRoutes(manifest as CrpManifest, filtered, kgTopics);
 
 	const inline = routes.skills.filter((s) => s.strategy === "inline").length;
 	const lazy = routes.skills.filter((s) => s.strategy === "lazy").length;

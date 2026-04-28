@@ -1,3 +1,4 @@
+import { green, red, yellow } from "../lib/cli/colors";
 import { runDoctorChecks } from "../lib/crp/doctor";
 
 export async function cmdCrpDoctor(): Promise<number> {
@@ -6,7 +7,11 @@ export async function cmdCrpDoctor(): Promise<number> {
 	console.log("");
 	for (const check of checks) {
 		const icon =
-			check.status === "ok" ? "[✓]" : check.status === "warn" ? "[!]" : "[✗]";
+			check.status === "ok"
+				? green("[✓]")
+				: check.status === "warn"
+					? yellow("[!]")
+					: red("[✗]");
 		console.log(`${icon} ${check.name}: ${check.message}`);
 	}
 	const hasFail = checks.some((c) => c.status === "fail");

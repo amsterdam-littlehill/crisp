@@ -9,6 +9,7 @@ import { cmdCrpKg } from "./commands/crp-kg";
 import { cmdCrpSync } from "./commands/crp-sync";
 import { cmdKgSync, cmdKgValidate } from "./commands/kg";
 import { cmdSkillCreate, cmdSkillDelete, cmdSkillList } from "./commands/skill";
+import { cmdStatus } from "./commands/status";
 import {
 	cmdTelemetryReport,
 	cmdTelemetryStart,
@@ -19,10 +20,12 @@ import { cmdValidate } from "./commands/validate";
 
 const program = new Command();
 
+program.option("--json", "Output results as JSON");
+
 program
 	.name("crp")
 	.description("Context-Router Protocol (CRP) unified CLI")
-	.version("1.0.0");
+	.version("0.5.0");
 
 program
 	.command("init")
@@ -31,7 +34,8 @@ program
 	.option("--description <text>", "Project description")
 	.option("--dry-run", "Preview only")
 	.action((options) => {
-		process.exit(cmdCrpInit(options));
+		const code = cmdCrpInit(options);
+		if (code !== 0) process.exitCode = code;
 	});
 
 program
@@ -40,7 +44,8 @@ program
 	.option("--check", "Dry-run: preview route changes")
 	.option("--include-user", "Include user-level skills in route generation")
 	.action((options) => {
-		process.exit(cmdCrpSync(options));
+		const code = cmdCrpSync(options);
+		if (code !== 0) process.exitCode = code;
 	});
 
 program
@@ -48,21 +53,24 @@ program
 	.description("Verify injection fits within token budget")
 	.option("--ci", "Exit 1 on truncation (for CI)")
 	.action((options) => {
-		process.exit(cmdCrpCheck(options));
+		const code = cmdCrpCheck(options);
+		if (code !== 0) process.exitCode = code;
 	});
 
 program
 	.command("audit")
 	.description("Show tier distribution and dead candidates")
 	.action(() => {
-		process.exit(cmdCrpAudit());
+		const code = cmdCrpAudit();
+		if (code !== 0) process.exitCode = code;
 	});
 
 program
 	.command("doctor")
 	.description("Diagnose environment and hook status")
 	.action(async () => {
-		process.exit(await cmdCrpDoctor());
+		const code = await cmdCrpDoctor();
+		if (code !== 0) process.exitCode = code;
 	});
 
 const skillCmd = program.command("skill").description("Skill management");
@@ -73,7 +81,8 @@ skillCmd
 	.option("--description <text>", "Skill description")
 	.option("--primary", "Mark as default skill")
 	.action((name, options) => {
-		process.exit(cmdSkillCreate({ name, ...options }));
+		const code = cmdSkillCreate({ name, ...options });
+		if (code !== 0) process.exitCode = code;
 	});
 
 skillCmd
@@ -81,14 +90,16 @@ skillCmd
 	.description("Delete a skill")
 	.option("--force", "Skip confirmation")
 	.action((name, options) => {
-		process.exit(cmdSkillDelete({ name, ...options }));
+		const code = cmdSkillDelete({ name, ...options });
+		if (code !== 0) process.exitCode = code;
 	});
 
 skillCmd
 	.command("list")
 	.description("List skills")
 	.action(() => {
-		process.exit(cmdSkillList());
+		const code = cmdSkillList();
+		if (code !== 0) process.exitCode = code;
 	});
 
 const kgCmd = program.command("kg").description("Knowledge graph operations");
@@ -97,7 +108,8 @@ kgCmd
 	.command("query <topic>")
 	.description("Query KG index for a topic")
 	.action((topic) => {
-		process.exit(cmdCrpKg(topic));
+		const code = cmdCrpKg(topic);
+		if (code !== 0) process.exitCode = code;
 	});
 
 kgCmd
@@ -105,14 +117,16 @@ kgCmd
 	.description("Generate .crp-kg.json")
 	.option("--skill <name>", "Target skill")
 	.action((options) => {
-		process.exit(cmdKgSync(options));
+		const code = cmdKgSync(options);
+		if (code !== 0) process.exitCode = code;
 	});
 
 kgCmd
 	.command("validate <path>")
 	.description("Validate .crp-kg.json")
 	.action((path) => {
-		process.exit(cmdKgValidate(path));
+		const code = cmdKgValidate(path);
+		if (code !== 0) process.exitCode = code;
 	});
 
 const telemetryCmd = program
@@ -123,21 +137,24 @@ telemetryCmd
 	.command("start")
 	.description("Start telemetry recording")
 	.action(() => {
-		process.exit(cmdTelemetryStart());
+		const code = cmdTelemetryStart();
+		if (code !== 0) process.exitCode = code;
 	});
 
 telemetryCmd
 	.command("stop")
 	.description("Stop telemetry recording")
 	.action(() => {
-		process.exit(cmdTelemetryStop());
+		const code = cmdTelemetryStop();
+		if (code !== 0) process.exitCode = code;
 	});
 
 telemetryCmd
 	.command("status")
 	.description("Show telemetry status")
 	.action(() => {
-		process.exit(cmdTelemetryStatus());
+		const code = cmdTelemetryStatus();
+		if (code !== 0) process.exitCode = code;
 	});
 
 telemetryCmd
@@ -145,14 +162,27 @@ telemetryCmd
 	.description("Generate telemetry report")
 	.option("--skill <name>", "Target skill")
 	.action((options) => {
-		process.exit(cmdTelemetryReport(options));
+		const code = cmdTelemetryReport(options);
+		if (code !== 0) process.exitCode = code;
+	});
+
+program
+	.command("status")
+	.description("Show project status summary")
+	.action(() => {
+		const code = cmdStatus();
+		if (code !== 0) process.exitCode = code;
 	});
 
 program
 	.command("validate")
 	.description("Validate crp.yaml schema")
 	.action(() => {
-		process.exit(cmdValidate());
+		const code = cmdValidate();
+		if (code !== 0) process.exitCode = code;
 	});
 
-program.parse();
+program.parseAsync(process.argv).catch((err) => {
+	console.error(err);
+	process.exit(1);
+});

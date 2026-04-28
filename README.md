@@ -102,9 +102,8 @@ The main entrypoint is `src/cli.ts`. Current command groups include:
 | `audit` | Show tier distribution and dead candidates |
 | `kg` | Sync or validate the CRP knowledge graph |
 | `doctor` | Diagnose environment and hook status |
-| `migrate` | Migrate legacy v1 project to v3 |
 | `telemetry` | Start, stop, inspect, or report telemetry |
-| `validate` | Run repository-level validation |
+| `validate` | Validate crp.yaml schema |
 
 For detailed flags, use `bun run src/cli.ts <command> --help`.
 
@@ -121,7 +120,6 @@ These TypeScript modules implement the current toolkit surface:
 | `src/commands/crp-audit.ts` | Tier distribution and dead candidate detection |
 | `src/commands/crp-kg.ts` | Knowledge graph query and indexing |
 | `src/commands/crp-doctor.ts` | Environment and hook status diagnosis |
-| `src/commands/crp-migrate.ts` | Legacy v1 to v3 migration |
 | `src/commands/skill.ts` | Skill creation, deletion, and listing |
 | `src/commands/kg.ts` | Knowledge graph sync and validation |
 | `src/commands/telemetry.ts` | Telemetry lifecycle and reporting |
@@ -147,6 +145,12 @@ bun run lint
 ```
 
 The `tests/` directory includes coverage for core modules such as CRP routing, injection, audit, knowledge graph sync, telemetry hooks, manifest validation, and integration behavior.
+
+## Platform Support
+
+- **Runtime**: Bun (required for `bun test` and `bun run`)
+- **AI Assistant**: Claude Desktop (hooks target `.claude/settings.json`)
+- Other platforms may work but are not currently supported.
 
 ## Current status and compatibility
 

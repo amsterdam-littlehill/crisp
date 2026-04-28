@@ -1,5 +1,6 @@
 import { existsSync, statSync, unlinkSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
+import { getEncoding } from "js-tiktoken";
 import { checkHookStatus } from "./hooks/inject";
 
 export interface DoctorCheck {
@@ -82,12 +83,8 @@ export async function runDoctorChecks(
 	// 5. js-tiktoken available
 	let tiktokenOk = false;
 	try {
-		const tiktoken = (await import("js-tiktoken")) as {
-			getEncoding?: unknown;
-		};
-		if (tiktoken.getEncoding) {
-			tiktokenOk = true;
-		}
+		getEncoding("cl100k_base");
+		tiktokenOk = true;
 	} catch {
 		tiktokenOk = false;
 	}

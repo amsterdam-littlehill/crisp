@@ -1,5 +1,13 @@
-import { cpSync, existsSync, mkdirSync, readdirSync, readFileSync, rmSync } from "node:fs";
+import {
+	cpSync,
+	existsSync,
+	mkdirSync,
+	readdirSync,
+	readFileSync,
+	rmSync,
+} from "node:fs";
 import { join } from "node:path";
+import { printError, printOk, printWarn } from "../lib/cli/format";
 import { getSkillSourceDirs, type SkillSource } from "../lib/crp/skill-source";
 import { loadManifest, saveManifest } from "../lib/manifest/io";
 import type { CrpManifest } from "../lib/manifest/types";
@@ -25,7 +33,11 @@ export function cmdSkillCreate(options: {
 }): number {
 	const manifest = loadManifest("crp.yaml");
 	if (!manifest.project) {
-		console.error("ERROR: No crp.yaml found. Run 'crp init' first.");
+		printError(
+			"No crp.yaml found",
+			"Cannot manage skills",
+			"Run 'crp init' first.",
+		);
 		return 1;
 	}
 
@@ -33,7 +45,7 @@ export function cmdSkillCreate(options: {
 	try {
 		name = validateSkillName(options.name);
 	} catch (e) {
-		console.error(`ERROR: ${(e as Error).message}`);
+		printError((e as Error).message);
 		return 1;
 	}
 
@@ -42,7 +54,7 @@ export function cmdSkillCreate(options: {
 	const skillDir = join(".claude", "skills", name);
 
 	if (existsSync(skillDir)) {
-		console.error(`ERROR: Skill directory already exists: ${skillDir}`);
+		printError(`Skill directory already exists: ${skillDir}`);
 		return 1;
 	}
 
@@ -51,14 +63,14 @@ export function cmdSkillCreate(options: {
 
 	const skills = manifest.skills || [];
 	if (skills.some((s) => s.name === name)) {
-		console.warn(`WARNING: Skill '${name}' already in crp.yaml`);
+		printWarn(`Skill '${name}' already in crp.yaml`);
 	} else {
 		skills.push({ name, description });
 		manifest.skills = skills;
 		if (skills.length === 1 || options.primary) {
 			manifest.default_skill = name;
 		}
-		saveManifest("crp.yaml", manifest as CrpManifest);
+		saveManifest("crp.yaml", manifest as unknown as CrpManifest);
 		console.log(`[REGISTERED] '${name}' in crp.yaml`);
 	}
 
@@ -71,7 +83,11 @@ export function cmdSkillDelete(options: {
 }): number {
 	const manifest = loadManifest("crp.yaml");
 	if (!manifest.project) {
-		console.error("ERROR: No crp.yaml found.");
+		printError(
+			"No crp.yaml found",
+			"Cannot manage skills",
+			"Run 'crp init' first.",
+		);
 		return 1;
 	}
 
@@ -79,7 +95,7 @@ export function cmdSkillDelete(options: {
 	try {
 		name = validateSkillName(options.name);
 	} catch (e) {
-		console.error(`ERROR: ${(e as Error).message}`);
+		printError((e as Error).message);
 		return 1;
 	}
 
@@ -95,14 +111,15 @@ export function cmdSkillDelete(options: {
 	}
 
 	if (!foundDir) {
-		console.error(`ERROR: Skill directory not found: ${name}`);
+		printError(`Skill directory not found: ${name}`);
 		return 1;
 	}
 
 	if (!options.force) {
-		console.log(`Skill at: ${foundDir}`);
-		console.log("Use --force to skip confirmation");
-		return 0;
+		console.log(`About to delete skill: ${foundDir}`);
+		console.log("This will be backed up to .crp/backups/");
+		console.log("Use --force to delete without confirmation");
+		return 2;
 	}
 
 	// Back up before deleting: user-level skills under .crp/backups/
@@ -113,20 +130,20 @@ export function cmdSkillDelete(options: {
 		cpSync(foundDir, backupDir, { recursive: true });
 		console.log(`[BACKED UP] ${foundDir} → ${backupDir}`);
 	} catch (e) {
-		console.error(`ERROR: Backup failed: ${(e as Error).message}`);
+		printError(`Backup failed: ${(e as Error).message}`);
 		return 1;
 	}
 
 	rmSync(foundDir, { recursive: true, force: true });
-	console.log(`[DELETED] ${foundDir}`);
+	printOk(`Deleted ${foundDir}`);
 
 	const skills = (manifest.skills || []).filter((s) => s.name !== name);
 	manifest.skills = skills;
 	if (manifest.default_skill === name) {
 		manifest.default_skill = skills.length > 0 ? skills[0].name : null;
 	}
-	saveManifest("crp.yaml", manifest as CrpManifest);
-	console.log(`[UNREGISTERED] '${name}' from crp.yaml`);
+	saveManifest("crp.yaml", manifest as unknown as CrpManifest);
+	printOk(`Unregistered '${name}' from crp.yaml`);
 
 	return 0;
 }
@@ -175,7 +192,11 @@ function scanAllSkillDirs(): DiscoveredSkill[] {
 export function cmdSkillList(): number {
 	const manifest = loadManifest("crp.yaml");
 	if (!manifest.project) {
-		console.error("ERROR: No crp.yaml found. Run 'crp init' first.");
+		printError(
+			"No crp.yaml found",
+			"Cannot manage skills",
+			"Run 'crp init' first.",
+		);
 		return 1;
 	}
 

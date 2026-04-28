@@ -1,5 +1,7 @@
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
+import { printError, printOk, printWarn } from "../cli/format";
+import { loadManifest } from "../manifest/io";
 import { analyzeReads } from "./analyzer";
 import type { Routes } from "./injection";
 
@@ -40,7 +42,10 @@ export function runCrpAudit(projectDir: string = process.cwd()): AuditResult {
 	const deadCount =
 		routes?.skills.filter((s) => s.strategy === "dead").length ?? 0;
 	const totalTokens = routes?.l0_inject_tokens ?? 0;
-	const maxTokens = 300;
+
+	// Load maxTokens from manifest, fallback to 300
+	const manifest = loadManifest(join(projectDir, "crp.yaml"));
+	const maxTokens = manifest.crp?.session_inject?.max_tokens ?? 300;
 
 	// Find dead candidates: skills in routes with 0 reads in last 14 days
 	const deadCandidates: string[] = [];
@@ -60,9 +65,9 @@ export function runCrpAudit(projectDir: string = process.cwd()): AuditResult {
 	);
 	console.log("");
 	console.log("Tier distribution:");
-	console.log(`  Inline: ${inlineCount}`);
-	console.log(`  Lazy:   ${lazyCount}`);
-	console.log(`  Dead:   ${deadCount}`);
+	printOk(`  Inline: ${inlineCount}`);
+	printWarn(`  Lazy:   ${lazyCount}`);
+	printError(`  Dead:   ${deadCount}`);
 	console.log("");
 
 	if (allFrequencies.length > 0) {
@@ -77,9 +82,9 @@ export function runCrpAudit(projectDir: string = process.cwd()): AuditResult {
 	}
 
 	if (deadCandidates.length > 0) {
-		console.log("Dead candidates (0 reads in 14 days):");
+		printWarn("Dead candidates (0 reads in 14 days):");
 		for (const name of deadCandidates) {
-			console.log(`  - ${name}`);
+			printWarn(`  - ${name}`);
 		}
 		console.log("");
 	}

@@ -1,26 +1,6 @@
-import { getEncoding, type Tiktoken } from "js-tiktoken";
+import { estimateTokens, freeEncoder } from "../tokens";
 
-let encoder: Tiktoken | null = null;
-
-export function freeEncoder(): void {
-	encoder = null;
-}
-
-function getEncoder(): Tiktoken {
-	if (!encoder) {
-		encoder = getEncoding("cl100k_base");
-	}
-	return encoder;
-}
-
-export function estimateTokens(text: string): number {
-	try {
-		const enc = getEncoder();
-		return enc.encode(text).length;
-	} catch {
-		return Math.floor(text.length / 4);
-	}
-}
+export { estimateTokens, freeEncoder };
 
 export interface RouteSkill {
 	name: string;

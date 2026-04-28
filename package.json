@@ -1,6 +1,6 @@
 {
   "name": "crisp",
-  "version": "1.0.0",
+  "version": "0.5.0",
   "type": "module",
   "description": "CRP — Context Routing Protocol for AI agent skill orchestration",
   "license": "MIT",
