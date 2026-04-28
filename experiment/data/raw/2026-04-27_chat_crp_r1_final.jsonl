@@ -1,8 +1,0 @@
-{"scenario": "chat", "worktree": "crisp-crp", "rep": 1, "turn": 1, "input_tokens": 73007, "output_tokens": 1814, "timestamp": "2026-04-27T05:22:42.687578+00:00", "error": null}
-{"scenario": "chat", "worktree": "crisp-crp", "rep": 1, "turn": 2, "input_tokens": 18141, "output_tokens": 732, "timestamp": "2026-04-27T05:23:59.689020+00:00", "error": null}
-{"scenario": "chat", "worktree": "crisp-crp", "rep": 1, "turn": 3, "input_tokens": 43571, "output_tokens": 3353, "timestamp": "2026-04-27T05:24:40.206444+00:00", "error": null}
-{"scenario": "chat", "worktree": "crisp-crp", "rep": 1, "turn": 4, "input_tokens": null, "output_tokens": null, "timestamp": "2026-04-27T05:26:33.392369+00:00", "error": "timeout after 600s"}
-{"scenario": "chat", "worktree": "crisp-crp", "rep": 1, "turn": 5, "input_tokens": 36994, "output_tokens": 2573, "timestamp": "2026-04-27T05:36:34.585504+00:00", "error": null}
-{"scenario": "chat", "worktree": "crisp-crp", "rep": 1, "turn": 6, "input_tokens": 9747, "output_tokens": 9913, "timestamp": "2026-04-27T05:38:06.787489+00:00", "error": null}
-{"scenario": "chat", "worktree": "crisp-crp", "rep": 1, "turn": 7, "input_tokens": 1488, "output_tokens": 1476, "timestamp": "2026-04-27T05:47:39.216101+00:00", "error": null}
-{"scenario": "chat", "worktree": "crisp-crp", "rep": 1, "turn": 8, "input_tokens": 32911, "output_tokens": 3427, "timestamp": "2026-04-27T05:49:50.630978+00:00", "error": null}
