@@ -13,7 +13,6 @@ import {
 	countTokens,
 	getCachedCount,
 	invalidateCache,
-	loadCache,
 	saveCache,
 } from "../../../src/lib/crp/token-cache";
 

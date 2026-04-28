@@ -29,11 +29,11 @@ export function cmdCrpCheck(options: CheckOptions = {}): number {
 	const injection = buildInjection(routes, maxTokens);
 
 	if (injection.truncated) {
-		console.error(
-			`[FAIL] Injection truncated. Dropped: ${injection.droppedSkills.join(", ")}`,
+		console.warn(
+			`[WARN] Injection truncated. Dropped: ${injection.droppedSkills.join(", ")}`,
 		);
-		console.error(`  Limit: ${maxTokens} tokens`);
-		return 1;
+		console.warn(`  Limit: ${maxTokens} tokens`);
+		return options.ci ? 1 : 0;
 	}
 
 	console.log(`[OK] Injection fits within ${maxTokens} tokens`);

@@ -30,7 +30,7 @@ describe("crp-sync.ts", () => {
 	function writeReads(records: unknown[]) {
 		const readsPath = join(tempDir, ".crp", "telemetry", "reads.jsonl");
 		const lines = records.map((r) => JSON.stringify(r)).join("\n");
-		writeFileSync(readsPath, lines + "\n", "utf-8");
+		writeFileSync(readsPath, `${lines}\n`, "utf-8");
 	}
 
 	function writeManifest(content: string) {

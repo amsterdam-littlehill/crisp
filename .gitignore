@@ -85,5 +85,8 @@ docs/
 .claude/
 .omc/
 
+# CRP runtime state
+.crp/
+
 # Git worktrees
 .worktrees/

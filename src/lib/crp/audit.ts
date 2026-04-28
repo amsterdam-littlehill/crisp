@@ -53,7 +53,7 @@ export function runCrpAudit(projectDir: string = process.cwd()): AuditResult {
 	}
 
 	// Print report
-	console.log("== CRP v3 Audit ==");
+	console.log("== CRP Audit ==");
 	console.log("");
 	console.log(
 		`L0 Injection: ${totalTokens} / ${maxTokens} tokens (${((totalTokens / maxTokens) * 100).toFixed(1)}%)`,

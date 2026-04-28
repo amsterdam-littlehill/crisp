@@ -20,6 +20,7 @@ import {
 import { generateKnowledgeGraph, runKgSync } from "../../src/lib/kg/generator";
 import type { KnowledgeGraph } from "../../src/lib/kg/validator";
 import { validateKg } from "../../src/lib/kg/validator";
+import type { CrpManifest } from "../../src/lib/manifest/types";
 
 describe("extractSummary", () => {
 	test("extracts @summary comment", () => {
@@ -235,7 +236,7 @@ describe("validateKg", () => {
 	test("flags node missing id", () => {
 		const kg = {
 			project: "test",
-			nodes: { files: [{ path: "a.md" } as any], task_types: [], tags: [] },
+			nodes: { files: [{ path: "a.md" }], task_types: [], tags: [] },
 			edges: [],
 		};
 		expect(validateKg(kg)).toContain("Node missing id in files");
@@ -290,7 +291,7 @@ describe("generateKnowledgeGraph", () => {
 			const manifest = {
 				project: { name: "test" },
 				skills: [{ name: "backend" }],
-			} as any;
+			} as CrpManifest;
 			const kg = generateKnowledgeGraph(dir, manifest);
 			expect(kg.project).toBe("test");
 			expect(kg.nodes.files.length).toBeGreaterThan(0);
@@ -311,7 +312,7 @@ describe("generateKnowledgeGraph", () => {
 		mkdirSync(join(dir, "references"), { recursive: true });
 		writeFileSync(join(dir, "references", "ref.md"), "Ref\n");
 		try {
-			const manifest = { project: { name: "test" } } as any;
+			const manifest = { project: { name: "test" }, skills: [] } as CrpManifest;
 			const kg = generateKnowledgeGraph(dir, manifest);
 			const skillFile = kg.nodes.files.find((f) => f.id === "SKILL");
 			const rulesFile = kg.nodes.files.find((f) => f.id === "rules/rule");
@@ -333,7 +334,7 @@ describe("generateKnowledgeGraph", () => {
 		mkdirSync(join(dir, "rules"), { recursive: true });
 		writeFileSync(join(dir, "rules", "base.md"), "Base\n");
 		try {
-			const manifest = { project: { name: "test" } } as any;
+			const manifest = { project: { name: "test" }, skills: [] } as CrpManifest;
 			const kg = generateKnowledgeGraph(dir, manifest);
 			const depEdge = kg.edges.find((e) => e.type === "DEPENDS_ON");
 			expect(depEdge).toBeDefined();
@@ -348,7 +349,7 @@ describe("generateKnowledgeGraph", () => {
 		const dir = mkdtempSync(join(tmpdir(), "crisp-kg-"));
 		writeFileSync(join(dir, "SKILL.md"), "# Backend\n\n<!-- @tag: api -->\n");
 		try {
-			const manifest = { project: { name: "test" } } as any;
+			const manifest = { project: { name: "test" }, skills: [] } as CrpManifest;
 			const kg = generateKnowledgeGraph(dir, manifest);
 			expect(kg.nodes.tags.some((t) => t.name === "api")).toBe(true);
 			expect(
@@ -365,7 +366,7 @@ describe("runKgSync", () => {
 		const manifest = {
 			project: { name: "test" },
 			skills: [{ name: "missing" }],
-		} as any;
+		} as CrpManifest;
 		const result = runKgSync("missing", ".claude/skills", manifest);
 		// Missing directories are skipped with a warning, not a hard failure
 		expect(result).toBe(0);

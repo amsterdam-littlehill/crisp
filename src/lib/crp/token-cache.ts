@@ -21,6 +21,8 @@ export interface CacheEntry {
 	mtime: number;
 }
 
+// Module-level cache state is a singleton — not safe for concurrent use in server contexts.
+// Call freeEncoder() to release the cached encoder when done.
 let encoder: Tiktoken | null = null;
 let memoryCache: Map<string, CacheEntry> | null = null;
 let loadedCachePath: string | null = null;
@@ -65,7 +67,7 @@ export function saveCache(cachePath: string = DEFAULT_CACHE_PATH): void {
 	try {
 		mkdirSync(dirname(cachePath), { recursive: true });
 		const obj = Object.fromEntries(memoryCache);
-		writeFileSync(cachePath, JSON.stringify(obj, null, 2) + "\n", "utf-8");
+		writeFileSync(cachePath, `${JSON.stringify(obj, null, 2)}\n`, "utf-8");
 	} catch {
 		// ignore write failures
 	}
@@ -117,6 +119,12 @@ export function countTokens(
 	}
 
 	return tokens;
+}
+
+export function freeEncoder(): void {
+	encoder = null;
+	memoryCache = null;
+	loadedCachePath = null;
 }
 
 export function invalidateCache(

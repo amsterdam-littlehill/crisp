@@ -19,7 +19,7 @@ describe("analyzer.ts", () => {
 
 	function writeRecords(records: unknown[]) {
 		const lines = records.map((r) => JSON.stringify(r)).join("\n");
-		writeFileSync(readsPath, lines + "\n", "utf-8");
+		writeFileSync(readsPath, `${lines}\n`, "utf-8");
 	}
 
 	test("returns empty array for missing file", () => {
@@ -47,8 +47,8 @@ describe("analyzer.ts", () => {
 		const result = analyzeReads(readsPath, 30);
 		expect(result).toHaveLength(2);
 		const backend = result.find((r) => r.name === "backend");
-		expect(backend!.freq).toBe(1);
-		expect(backend!.sessions).toBe(1);
+		expect(backend?.freq).toBe(1);
+		expect(backend?.sessions).toBe(1);
 	});
 
 	test("deduplicates reads within same session", () => {
@@ -100,9 +100,9 @@ describe("analyzer.ts", () => {
 		const result = analyzeReads(readsPath, 30);
 		expect(result).toHaveLength(2);
 		const backend = result.find((r) => r.name === "backend");
-		expect(backend!.freq).toBe(2 / 3);
+		expect(backend?.freq).toBe(2 / 3);
 		const frontend = result.find((r) => r.name === "frontend");
-		expect(frontend!.freq).toBe(1 / 3);
+		expect(frontend?.freq).toBe(1 / 3);
 	});
 
 	test("filters out records outside window", () => {

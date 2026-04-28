@@ -30,7 +30,10 @@ function isTriggerPhrase(text: string): boolean {
 	);
 }
 
-export function compressSkill(skillPath: string): SkillSummary {
+export function compressSkill(
+	skillPath: string,
+	maxSupplyTokens = 80,
+): SkillSummary {
 	let content: string;
 	try {
 		content = readFileSync(skillPath, "utf-8");
@@ -69,13 +72,13 @@ export function compressSkill(skillPath: string): SkillSummary {
 	let summary = selected.join("; ");
 	let tokens = estimateTokens(summary);
 
-	while (tokens > 80 && selected.length > 1) {
+	while (tokens > maxSupplyTokens && selected.length > 1) {
 		selected.pop();
 		summary = selected.join("; ");
 		tokens = estimateTokens(summary);
 	}
 
-	if (tokens > 80 && selected.length === 1) {
+	if (tokens > maxSupplyTokens && selected.length === 1) {
 		summary = summary.slice(0, 300);
 		tokens = estimateTokens(summary);
 	}

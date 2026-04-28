@@ -1,6 +1,6 @@
 #!/usr/bin/env bun
 /**
- * session-start.ts — SessionStart hook for CRP v3.
+ * session-start.ts — SessionStart hook for CRP.
  *
  * Reads .crp/routes.json and generates a compressed injection prompt.
  * Output is limited to max_tokens from crp.yaml config.

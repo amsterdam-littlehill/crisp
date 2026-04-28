@@ -83,8 +83,8 @@ describe("kg-index.ts", () => {
 
 		const loaded = loadKgIndex(tempDir);
 		expect(loaded).not.toBeNull();
-		expect(loaded!.version).toBe(1);
-		expect(loaded!.chunks).toEqual(index.chunks);
+		expect(loaded?.version).toBe(1);
+		expect(loaded?.chunks).toEqual(index.chunks);
 	});
 
 	test("queryKg returns matching content", () => {

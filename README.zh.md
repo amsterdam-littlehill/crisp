@@ -29,10 +29,10 @@ crisp 是 Context Router Protocol（CRP）的单一 Bun + TypeScript 实现。�
 - 通过统一 CLI 为项目初始化 CRP 脚手架
 - 创建、列出和管理 skills 及其路由结构
 - 同步自动生成的入口文件和 shell 相关产物
-- 审计规则系统中的 token 使用与预算维度
+- 审计规则系统中的 token 使用与层级分布
 - 从 CRP 结构中构建并校验知识图谱
-- 追踪会话状态、artifact、reflector 输出和 telemetry 日志
-- 运行健康检查、drift 检查和仓库校验
+- 追踪 telemetry 日志与 hook 状态
+- 校验 injection 是否在 token 预算内
 
 ## 仓库结构
 
@@ -74,13 +74,13 @@ bun run src/cli.ts --help
 ### 4. 初始化项目
 
 ```bash
-bun run src/cli.ts init --skill backend --project my-app
+bun run src/cli.ts init --project my-app
 ```
 
-### 5. 运行健康检查
+### 5. 运行检查
 
 ```bash
-bun run src/cli.ts check --drifts
+bun run src/cli.ts check
 ```
 
 ### 6. 运行测试
@@ -98,10 +98,11 @@ bun test
 | `init` | 为项目初始化 CRP 脚手架 |
 | `skill` | 创建、删除或列出 skills |
 | `sync` | 重新生成同步后的入口与 shell 产物 |
-| `check` | 运行健康检查与 drift 检测 |
-| `audit` | 审计 token 使用与相关报告 |
+| `check` | 校验 injection 是否在 token 预算内 |
+| `audit` | 展示层级分布与 dead candidate |
 | `kg` | 同步或校验 CRP 知识图谱 |
-| `budget` | 运行预算分析流程 |
+| `doctor` | 诊断环境与 hook 状态 |
+| `migrate` | 将旧版 v1 项目迁移至 v3 |
 | `telemetry` | 启动、停止、查看或报告遥测 |
 | `validate` | 运行仓库级校验 |
 
@@ -114,22 +115,20 @@ bun test
 | 模块 | 职责 |
 |---|---|
 | `src/cli.ts` | 统一 CLI 入口 |
-| `src/commands/init.ts` | 项目脚手架初始化 |
+| `src/commands/crp-init.ts` | v3 项目脚手架（hooks、routes、telemetry） |
+| `src/commands/crp-sync.ts` | Telemetry 分析与 routes 重新生成 |
+| `src/commands/crp-check.ts` | Injection token 预算校验 |
+| `src/commands/crp-audit.ts` | 层级分布与 dead candidate 检测 |
+| `src/commands/crp-kg.ts` | 知识图谱查询与索引 |
+| `src/commands/crp-doctor.ts` | 环境与 hook 状态诊断 |
+| `src/commands/crp-migrate.ts` | 旧版 v1 到 v3 迁移 |
 | `src/commands/skill.ts` | Skill 创建、删除与列出 |
-| `src/commands/sync.ts` | Shell 与入口文件同步 |
-| `src/commands/check.ts` | 健康检查与 drift 检测 |
-| `src/commands/audit.ts` | Token 估算与审计报告 |
 | `src/commands/kg.ts` | 知识图谱同步与校验 |
-| `src/commands/budget.ts` | CRP 多维预算分析 |
 | `src/commands/telemetry.ts` | 遥测生命周期与报告 |
 | `src/commands/validate.ts` | crp.yaml 模式校验 |
 | `src/lib/manifest/` | Manifest I/O、校验与 frontmatter 提取 |
-| `src/lib/gateway/` | Gateway 生成与 Common Tasks 解析 |
-| `src/lib/health/` | 健康检查、drift 检测与质量评分 |
-| `src/lib/audit/` | Token 审计与基准模拟 |
+| `src/lib/crp/` | v3 核心：路由、injection、审计、迁移、hooks |
 | `src/lib/kg/` | 知识图谱提取、校验与生成 |
-| `src/lib/sync/` | Shell 与多技能同步 |
-| `src/lib/budget/` | 预算分析计算 |
 | `src/lib/telemetry/` | 遥测钩子、日志与报告 |
 
 ## 配置
@@ -147,7 +146,7 @@ bun test
 bun run lint
 ```
 
-`tests/` 目录已经覆盖预算分析、知识图谱同步、reflector 逻辑、会话跟踪、健康检查以及集成行为等核心模块。
+`tests/` 目录已经覆盖 CRP 路由、injection、审计、知识图谱同步、遥测钩子、manifest 校验以及集成行为等核心模块。
 
 ## 当前状态与兼容性
 

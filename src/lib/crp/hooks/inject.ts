@@ -24,7 +24,7 @@ function saveSettings(
 ): void {
 	writeFileSync(
 		settingsPath,
-		JSON.stringify(settings, null, 2) + "\n",
+		`${JSON.stringify(settings, null, 2)}\n`,
 		"utf-8",
 	);
 }

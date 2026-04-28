@@ -34,7 +34,7 @@ describe("audit.ts", () => {
 
 		writeFileSync(
 			join(tempDir, ".crp", "telemetry", "reads.jsonl"),
-			[
+			`${[
 				JSON.stringify({
 					ts: oldDate,
 					session_id: "s1",
@@ -47,7 +47,7 @@ describe("audit.ts", () => {
 					file: "/skills/frontend/SKILL.md",
 					tokens: 10,
 				}),
-			].join("\n") + "\n",
+			].join("\n")}\n`,
 			"utf-8",
 		);
 

@@ -1,12 +1,12 @@
 #!/usr/bin/env bun
 /**
- * post-read.ts — PostToolUse hook for CRP v3 telemetry.
+ * post-read.ts — PostToolUse hook for CRP telemetry.
  *
  * CRITICAL: This hook must never throw exceptions.
  * stdout must always be empty or "{}" to avoid polluting Claude context.
  * All errors are logged to .crp/logs/hook-errors.jsonl
  */
-import { appendFileSync, existsSync, mkdirSync, statSync } from "node:fs";
+import { appendFileSync, mkdirSync, statSync } from "node:fs";
 import { dirname, join } from "node:path";
 
 export const PROJECT_DIR = process.env.CLAUDE_PROJECT_DIR || process.cwd();
@@ -30,12 +30,11 @@ export function logError(
 ): void {
 	try {
 		ensureDir(dirname(errorPath));
-		const record =
-			JSON.stringify({
-				ts: new Date().toISOString(),
-				hook: "post-read",
-				error: message,
-			}) + "\n";
+		const record = `${JSON.stringify({
+			ts: new Date().toISOString(),
+			hook: "post-read",
+			error: message,
+		})}\n`;
 		appendFileSync(errorPath, record, "utf-8");
 	} catch {
 		// can't even log the error
@@ -107,7 +106,7 @@ export function runPostRead(
 	try {
 		ensureDir(dirname(readsPath));
 		const record = buildReadRecord(sessionId, filePath, tokens);
-		appendFileSync(readsPath, JSON.stringify(record) + "\n", "utf-8");
+		appendFileSync(readsPath, `${JSON.stringify(record)}\n`, "utf-8");
 	} catch (e) {
 		logError(String(e), errorPath);
 	}

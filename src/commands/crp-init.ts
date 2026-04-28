@@ -57,7 +57,7 @@ export function cmdCrpInit(options: InitOptions = {}): number {
 	if (!existsSync(routesPath)) {
 		writeFileSync(
 			routesPath,
-			JSON.stringify({ version: 3, skills: [] }, null, 2) + "\n",
+			`${JSON.stringify({ version: 3, skills: [] }, null, 2)}\n`,
 			"utf-8",
 		);
 	}
@@ -72,7 +72,7 @@ export function cmdCrpInit(options: InitOptions = {}): number {
 		saveManifest(rootYamlPath, manifest);
 	}
 
-	// Mirror to .crp/crp.yaml for v3 commands
+	// Mirror to .crp/crp.yaml
 	const crpYamlPath = join(crpDir, "crp.yaml");
 	if (!existsSync(crpYamlPath)) {
 		const manifest = defaultManifest(

@@ -2,6 +2,10 @@ import { getEncoding, type Tiktoken } from "js-tiktoken";
 
 let encoder: Tiktoken | null = null;
 
+export function freeEncoder(): void {
+	encoder = null;
+}
+
 function getEncoder(): Tiktoken {
 	if (!encoder) {
 		encoder = getEncoding("cl100k_base");
@@ -22,6 +26,7 @@ export interface RouteSkill {
 	name: string;
 	strategy: "inline" | "lazy" | "dead";
 	freq: number;
+	source?: "project" | "user";
 	summary?: string;
 	hint?: string;
 }
@@ -115,7 +120,8 @@ export function buildInjection(
 
 	// Drop dead candidates (lowest priority)
 	while (dead.length > 0 && currentTokenCount() > maxTokens) {
-		const removed = dead.pop()!;
+		const removed = dead.pop();
+		if (!removed) break;
 		droppedSkills.push(removed.name);
 		const idx = parts.findIndex((p) => p.startsWith("Dead candidate:"));
 		if (idx >= 0) {
@@ -129,7 +135,8 @@ export function buildInjection(
 
 	// Drop lazy skills
 	while (lazy.length > 0 && currentTokenCount() > maxTokens) {
-		const removed = lazy.pop()!;
+		const removed = lazy.pop();
+		if (!removed) break;
 		droppedSkills.push(removed.name);
 		const idx = parts.findIndex((p) => p.startsWith("On-demand:"));
 		if (idx >= 0) {
@@ -143,7 +150,8 @@ export function buildInjection(
 
 	// Drop inline skills (lowest freq first = end of array)
 	while (inline.length > 0 && currentTokenCount() > maxTokens) {
-		const removed = inline.pop()!;
+		const removed = inline.pop();
+		if (!removed) break;
 		droppedSkills.push(removed.name);
 		const idx = parts.findIndex((p) => p.startsWith("Inline:"));
 		if (idx >= 0) {

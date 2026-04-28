@@ -24,7 +24,7 @@ export function injectHook(settingsPath: string): void {
 	const postToolUse = hooks.PostToolUse as Array<Record<string, unknown>>;
 
 	const hookCommand =
-		"bun run .claude/hooks/telemetry-hook.ts --read ${file_path}";
+		"bun run .claude/hooks/telemetry-hook.ts --read " + "$" + "{file_path}";
 	for (const hook of postToolUse) {
 		if (
 			typeof hook.command === "string" &&
@@ -42,7 +42,7 @@ export function injectHook(settingsPath: string): void {
 
 	writeFileSync(
 		settingsPath,
-		JSON.stringify(settings, null, 2) + "\n",
+		`${JSON.stringify(settings, null, 2)}\n`,
 		"utf-8",
 	);
 	console.log(`Hook injected into ${settingsPath}`);
@@ -55,7 +55,7 @@ export function injectHook(settingsPath: string): void {
  * telemetry-hook.ts — PostToolUse hook for telemetry.
  *
  * CRITICAL: This hook must never throw exceptions.
- * All errors are logged to .crisp/telemetry/errors.log
+ * All errors are logged to .crp/telemetry/errors.log
  */
 import { appendFileSync, mkdirSync, existsSync } from "node:fs";
 
@@ -63,7 +63,7 @@ const readIdx = process.argv.indexOf("--read");
 const filePath = readIdx !== -1 ? process.argv[readIdx + 1] : undefined;
 if (!filePath) process.exit(0);
 
-const logDir = ".crisp/telemetry";
+const logDir = ".crp/telemetry";
 if (!existsSync(logDir)) mkdirSync(logDir, { recursive: true });
 
 try {
@@ -90,7 +90,7 @@ try {
 	writeFileSync(hookScript, hookContent, "utf-8");
 	console.log(`Hook script created: ${hookScript}`);
 
-	const telemetryDir = join(".crisp", "telemetry");
+	const telemetryDir = join(".crp", "telemetry");
 	mkdirSync(telemetryDir, { recursive: true });
 	const gitkeep = join(telemetryDir, ".gitkeep");
 	if (!existsSync(gitkeep)) {
@@ -146,7 +146,7 @@ export function removeHook(settingsPath: string): void {
 	) {
 		writeFileSync(
 			settingsPath,
-			JSON.stringify(settings, null, 2) + "\n",
+			`${JSON.stringify(settings, null, 2)}\n`,
 			"utf-8",
 		);
 		console.log("Hook removed");
@@ -179,7 +179,7 @@ export function checkHookStatus(settingsPath: string): {
 	}
 
 	let eventCount = 0;
-	const logPath = join(".crisp", "telemetry", "log.jsonl");
+	const logPath = join(".crp", "telemetry", "log.jsonl");
 	if (existsSync(logPath)) {
 		try {
 			const content = readFileSync(logPath, "utf-8").trim();

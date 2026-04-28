@@ -74,7 +74,7 @@ describe("routes.ts", () => {
 		const routes = generateRoutes(makeManifest(), frequencies);
 		expect(routes.l0_inject_tokens).toBeDefined();
 		expect(typeof routes.l0_inject_tokens).toBe("number");
-		expect(routes.l0_inject_tokens! > 0).toBe(true);
+		expect(routes.l0_inject_tokens).toBeGreaterThan(0);
 	});
 
 	test("uses manifest thresholds", () => {
@@ -121,6 +121,6 @@ describe("routes.ts", () => {
 		const routes = generateRoutes(makeManifest(), frequencies);
 		const backend = routes.skills.find((s) => s.name === "backend");
 		expect(backend?.summary).toBeDefined();
-		expect(backend?.summary!.length).toBeGreaterThan(0);
+		expect(backend?.summary?.length).toBeGreaterThan(0);
 	});
 });

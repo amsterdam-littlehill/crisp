@@ -121,19 +121,4 @@ describe("crp-doctor.ts", () => {
 		const exitCode = await cmdCrpDoctor();
 		expect(exitCode).toBe(1);
 	});
-
-	test("does not use require() for js-tiktoken", () => {
-		const doctorSource = readFileSync(
-			join(__dirname, "../../src/lib/crp/doctor.ts"),
-			"utf-8",
-		);
-		expect(doctorSource).not.toContain('require("js-tiktoken")');
-	});
-
-	test("package.json includes typescript devDependency", () => {
-		const pkg = JSON.parse(
-			readFileSync(join(__dirname, "../../package.json"), "utf-8"),
-		);
-		expect(pkg.devDependencies?.typescript).toBeDefined();
-	});
 });

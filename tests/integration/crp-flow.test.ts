@@ -18,7 +18,7 @@ import { buildKgIndex, saveKgIndex } from "../../src/lib/crp/kg-index";
 import { loadManifest, saveManifest } from "../../src/lib/manifest/io";
 import type { CrpManifest } from "../../src/lib/manifest/types";
 
-describe("CRP v3 end-to-end flow", () => {
+describe("CRP end-to-end flow", () => {
 	let tempDir: string;
 	let originalCwd: string;
 
@@ -109,7 +109,7 @@ describe("CRP v3 end-to-end flow", () => {
 		}
 		writeFileSync(
 			join(telemetryDir, "reads.jsonl"),
-			lines.join("\n") + "\n",
+			`${lines.join("\n")}\n`,
 			"utf-8",
 		);
 	}
@@ -168,6 +168,6 @@ describe("CRP v3 end-to-end flow", () => {
 			"utf-8",
 		);
 
-		expect(cmdCrpCheck()).toBe(1);
+		expect(cmdCrpCheck({ ci: true })).toBe(1);
 	});
 });

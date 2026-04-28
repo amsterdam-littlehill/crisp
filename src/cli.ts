@@ -1,13 +1,14 @@
 #!/usr/bin/env bun
 
 import { Command } from "commander";
-import { cmdAudit } from "./commands/audit";
-import { cmdBudget } from "./commands/budget";
-import { cmdCheck } from "./commands/check";
-import { cmdInit } from "./commands/init";
+import { cmdCrpAudit } from "./commands/crp-audit";
+import { cmdCrpCheck } from "./commands/crp-check";
+import { cmdCrpDoctor } from "./commands/crp-doctor";
+import { cmdCrpInit } from "./commands/crp-init";
+import { cmdCrpKg } from "./commands/crp-kg";
+import { cmdCrpSync } from "./commands/crp-sync";
 import { cmdKgSync, cmdKgValidate } from "./commands/kg";
 import { cmdSkillCreate, cmdSkillDelete, cmdSkillList } from "./commands/skill";
-import { runSync } from "./commands/sync";
 import {
 	cmdTelemetryReport,
 	cmdTelemetryStart,
@@ -25,14 +26,43 @@ program
 
 program
 	.command("init")
-	.description("Create crp.yaml + scaffold")
-	.option("--from-existing", "Migrate existing project")
-	.option("--skill <name>", "Initial skill name")
+	.description("Initialize CRP project (hooks, routes, telemetry)")
 	.option("--project <name>", "Project name")
-	.option("--shadow", "Preserve existing files")
+	.option("--description <text>", "Project description")
 	.option("--dry-run", "Preview only")
 	.action((options) => {
-		process.exit(cmdInit(options));
+		process.exit(cmdCrpInit(options));
+	});
+
+program
+	.command("sync")
+	.description("Analyze telemetry and regenerate routes.json")
+	.option("--check", "Dry-run: preview route changes")
+	.option("--include-user", "Include user-level skills in route generation")
+	.action((options) => {
+		process.exit(cmdCrpSync(options));
+	});
+
+program
+	.command("check")
+	.description("Verify injection fits within token budget")
+	.option("--ci", "Exit 1 on truncation (for CI)")
+	.action((options) => {
+		process.exit(cmdCrpCheck(options));
+	});
+
+program
+	.command("audit")
+	.description("Show tier distribution and dead candidates")
+	.action(() => {
+		process.exit(cmdCrpAudit());
+	});
+
+program
+	.command("doctor")
+	.description("Diagnose environment and hook status")
+	.action(async () => {
+		process.exit(await cmdCrpDoctor());
 	});
 
 const skillCmd = program.command("skill").description("Skill management");
@@ -61,35 +91,14 @@ skillCmd
 		process.exit(cmdSkillList());
 	});
 
-program
-	.command("sync")
-	.description("Regenerate gateway + proxies")
-	.option("--skill <name>", "Target skill (optional)")
-	.option("--check", "Dry-run")
-	.action(async (options) => {
-		process.exit(await runSync(options.skill, undefined, options.check));
-	});
-
-program
-	.command("check")
-	.description("Run health checks")
-	.option("--skill <name>", "Target skill (optional)")
-	.option("--fix", "Auto-fix minor issues")
-	.option("--drifts", "Check structural drift")
-	.action((options) => {
-		process.exit(cmdCheck(options));
-	});
-
-program
-	.command("audit")
-	.description("Run token audit")
-	.option("--skill <name>", "Target skill (optional)")
-	.option("--report", "Write JSON report")
-	.action((options) => {
-		process.exit(cmdAudit(options));
-	});
-
 const kgCmd = program.command("kg").description("Knowledge graph operations");
+
+kgCmd
+	.command("query <topic>")
+	.description("Query KG index for a topic")
+	.action((topic) => {
+		process.exit(cmdCrpKg(topic));
+	});
 
 kgCmd
 	.command("sync")
@@ -104,15 +113,6 @@ kgCmd
 	.description("Validate .crp-kg.json")
 	.action((path) => {
 		process.exit(cmdKgValidate(path));
-	});
-
-program
-	.command("budget")
-	.description("Run budget audit")
-	.option("--skill <name>", "Target skill")
-	.option("--report", "Write JSON report")
-	.action((options) => {
-		process.exit(cmdBudget(options));
 	});
 
 const telemetryCmd = program

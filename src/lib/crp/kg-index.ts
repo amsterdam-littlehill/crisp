@@ -59,17 +59,17 @@ export function buildKgIndex(projectDir: string = process.cwd()): KgIndex {
 
 		// Collect topics from tags and task_types
 		const topics: string[] = [skillName.toLowerCase()];
-		for (const tag of kg.nodes.tags) {
+		for (const tag of kg.nodes?.tags ?? []) {
 			topics.push(tag.name.toLowerCase());
 		}
-		for (const task of kg.nodes.task_types) {
+		for (const task of kg.nodes?.task_types ?? []) {
 			for (const kw of task.keywords) {
 				topics.push(kw.toLowerCase());
 			}
 		}
 
 		// Create chunks from file summaries
-		for (const file of kg.nodes.files) {
+		for (const file of kg.nodes?.files ?? []) {
 			if (!file.summary) continue;
 
 			const id = `${skillName}::${file.id}`;
@@ -100,7 +100,7 @@ export function saveKgIndex(
 ): void {
 	const indexPath = join(projectDir, ".crp", "kg", "index.json");
 	mkdirSync(dirname(indexPath), { recursive: true });
-	writeFileSync(indexPath, JSON.stringify(index, null, 2) + "\n", "utf-8");
+	writeFileSync(indexPath, `${JSON.stringify(index, null, 2)}\n`, "utf-8");
 }
 
 export function loadKgIndex(

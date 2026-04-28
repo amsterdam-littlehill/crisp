@@ -37,7 +37,7 @@ describe("crp-init.ts", () => {
 		expect(existsSync(join(tempDir, ".crp", "logs"))).toBe(true);
 	});
 
-	test("creates routes.json with version 3", () => {
+	test("creates routes.json with version field", () => {
 		cmdCrpInit();
 		const routesPath = join(tempDir, ".crp", "routes.json");
 		expect(existsSync(routesPath)).toBe(true);

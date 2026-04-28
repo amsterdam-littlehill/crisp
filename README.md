@@ -29,10 +29,10 @@ crisp is a single Bun + TypeScript implementation of the Context Router Protocol
 - Initialize CRP scaffolding for a project with a unified CLI
 - Create, list, and manage skills and their routing structure
 - Sync generated entry files and shell-facing artifacts
-- Audit token usage and budget dimensions across the rule system
+- Audit token usage and tier distribution across the rule system
 - Build and validate a knowledge graph from CRP structures
-- Track session state, artifacts, reflection output, and telemetry logs
-- Run health checks, drift checks, and repository validation
+- Track telemetry logs and hook status
+- Verify injection fits within token budget
 
 ## Repository layout
 
@@ -74,13 +74,13 @@ bun run src/cli.ts --help
 ### 4. Initialize a project
 
 ```bash
-bun run src/cli.ts init --skill backend --project my-app
+bun run src/cli.ts init --project my-app
 ```
 
-### 5. Run a health check
+### 5. Run a check
 
 ```bash
-bun run src/cli.ts check --drifts
+bun run src/cli.ts check
 ```
 
 ### 6. Run tests
@@ -98,10 +98,11 @@ The main entrypoint is `src/cli.ts`. Current command groups include:
 | `init` | Initialize CRP scaffolding for a project |
 | `skill` | Create, delete, or list skills |
 | `sync` | Regenerate synced shell and entrypoint artifacts |
-| `check` | Run health checks and drift detection |
-| `audit` | Audit token usage and related reports |
+| `check` | Verify injection fits within token budget |
+| `audit` | Show tier distribution and dead candidates |
 | `kg` | Sync or validate the CRP knowledge graph |
-| `budget` | Run the budget analysis workflow |
+| `doctor` | Diagnose environment and hook status |
+| `migrate` | Migrate legacy v1 project to v3 |
 | `telemetry` | Start, stop, inspect, or report telemetry |
 | `validate` | Run repository-level validation |
 
@@ -114,22 +115,20 @@ These TypeScript modules implement the current toolkit surface:
 | Module | Responsibility |
 |---|---|
 | `src/cli.ts` | Unified CLI entry point |
-| `src/commands/init.ts` | Project scaffolding and initialization |
+| `src/commands/crp-init.ts` | v3 project scaffolding (hooks, routes, telemetry) |
+| `src/commands/crp-sync.ts` | Telemetry analysis and routes regeneration |
+| `src/commands/crp-check.ts` | Injection token budget verification |
+| `src/commands/crp-audit.ts` | Tier distribution and dead candidate detection |
+| `src/commands/crp-kg.ts` | Knowledge graph query and indexing |
+| `src/commands/crp-doctor.ts` | Environment and hook status diagnosis |
+| `src/commands/crp-migrate.ts` | Legacy v1 to v3 migration |
 | `src/commands/skill.ts` | Skill creation, deletion, and listing |
-| `src/commands/sync.ts` | Shell and entrypoint synchronization |
-| `src/commands/check.ts` | Health checks and drift detection |
-| `src/commands/audit.ts` | Token estimation and audit reporting |
 | `src/commands/kg.ts` | Knowledge graph sync and validation |
-| `src/commands/budget.ts` | Budget analysis across CRP dimensions |
 | `src/commands/telemetry.ts` | Telemetry lifecycle and reporting |
 | `src/commands/validate.ts` | crp.yaml schema validation |
 | `src/lib/manifest/` | Manifest I/O, validation, and frontmatter extraction |
-| `src/lib/gateway/` | Gateway generation and Common Tasks parsing |
-| `src/lib/health/` | Health checks, drift detection, and quality scoring |
-| `src/lib/audit/` | Token audit and benchmark simulation |
+| `src/lib/crp/` | v3 core: routing, injection, audit, migration, hooks |
 | `src/lib/kg/` | Knowledge graph extraction, validation, and generation |
-| `src/lib/sync/` | Shell and multi-skill synchronization |
-| `src/lib/budget/` | Budget analysis calculator |
 | `src/lib/telemetry/` | Telemetry hooks, logging, and reporting |
 
 ## Configuration
@@ -147,7 +146,7 @@ bun test
 bun run lint
 ```
 
-The `tests/` directory includes coverage for core modules such as budget analysis, knowledge graph sync, reflector logic, session tracking, health checks, and integration behavior.
+The `tests/` directory includes coverage for core modules such as CRP routing, injection, audit, knowledge graph sync, telemetry hooks, manifest validation, and integration behavior.
 
 ## Current status and compatibility
 

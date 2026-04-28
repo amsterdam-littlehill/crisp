@@ -1,7 +1,6 @@
 import { describe, expect, test } from "bun:test";
 import {
 	existsSync,
-	mkdirSync,
 	mkdtempSync,
 	readFileSync,
 	rmSync,
@@ -23,7 +22,7 @@ import {
 describe("recordReadEvent", () => {
 	test("creates log file with event", () => {
 		const dir = mkdtempSync(join(tmpdir(), "crisp-tel-"));
-		const logPath = join(dir, "log.jsonl");
+		const _logPath = join(dir, "log.jsonl");
 		recordReadEvent({
 			timestamp: "2024-01-01T00:00:00Z",
 			event_type: "READ",
@@ -67,7 +66,7 @@ describe("loadTelemetryLog", () => {
 			JSON.stringify({ event_type: "READ", file: "a.md", tokens: 10 }),
 			JSON.stringify({ event_type: "READ", file: "b.md", tokens: 20 }),
 		];
-		writeFileSync(logPath, lines.join("\n") + "\n");
+		writeFileSync(logPath, `${lines.join("\n")}\n`);
 		try {
 			const events = loadTelemetryLog(logPath);
 			expect(events.length).toBe(2);
@@ -130,7 +129,7 @@ describe("getLogStats", () => {
 			JSON.stringify({ event_type: "READ", file: "a.md", tokens: 20 }),
 			JSON.stringify({ event_type: "WRITE", file: "b.md", tokens: 5 }),
 		];
-		writeFileSync(logPath, lines.join("\n") + "\n");
+		writeFileSync(logPath, `${lines.join("\n")}\n`);
 		try {
 			const stats = getLogStats(logPath);
 			expect(stats.total_events).toBe(3);
@@ -185,7 +184,9 @@ describe("removeHook", () => {
 					{
 						tool: "Read",
 						command:
-							"bun run .claude/hooks/telemetry-hook.ts --read ${file_path}",
+							"bun run .claude/hooks/telemetry-hook.ts --read " +
+							"$" +
+							"{file_path}",
 					},
 					{ tool: "Edit", command: "other" },
 				],
@@ -223,7 +224,9 @@ describe("checkHookStatus", () => {
 					{
 						tool: "Read",
 						command:
-							"bun run .claude/hooks/telemetry-hook.ts --read ${file_path}",
+							"bun run .claude/hooks/telemetry-hook.ts --read " +
+							"$" +
+							"{file_path}",
 					},
 				],
 			},

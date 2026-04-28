@@ -1,38 +1,29 @@
 project:
   name: crisp
   description: Context-Router Protocol reference implementation
-skills:
-  - name: backend
-    description: Backend development skill for CRP tooling and experiment automation
-default_skill: backend
-
+skills: []
 knowledge_graph:
   enabled: true
   max_tokens_execution: 1500
   max_tokens_synthesis: 800
   max_tokens_cross_domain: 1200
   hot_cache_files: []
-
 budget_audit:
   max_gateway_tokens: 1000
   max_entry_proxy_tokens: 200
   max_rules_bloat_tokens: 3000
-
 checks:
   max_gateway_lines: 100
   max_proxy_lines: 60
-
 audit:
   use_tiktoken: true
-
 context_pressure:
   window_size: 200000
-  soft_threshold: 0.60
+  soft_threshold: 0.6
   hard_threshold: 0.75
   emergency_threshold: 0.85
-
 quality_scoring:
-  min_production_score: 7.0
+  min_production_score: 7
   dimensions:
     - explicit_ratio
     - attention_alignment

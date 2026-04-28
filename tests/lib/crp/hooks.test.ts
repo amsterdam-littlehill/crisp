@@ -16,7 +16,6 @@ import {
 } from "../../../src/lib/crp/hooks/inject";
 import {
 	buildReadRecord,
-	ensureDir,
 	isSkillFile,
 	logError,
 	runPostRead,
@@ -27,7 +26,7 @@ import {
 	runSessionStart,
 } from "../../../src/lib/crp/hooks/session-start";
 
-const PROJECT_ROOT = join(import.meta.dirname, "../../../../");
+const _PROJECT_ROOT = join(import.meta.dirname, "../../../../");
 
 describe("inject.ts", () => {
 	let tempDir: string;

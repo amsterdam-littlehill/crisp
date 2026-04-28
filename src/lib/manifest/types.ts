@@ -1,3 +1,22 @@
+export interface CrpConfig {
+	version: 3;
+	session_inject: {
+		max_tokens: number;
+		include_kg_index: boolean;
+	};
+	tiers: {
+		inline_threshold: number;
+		hint_threshold: number;
+	};
+	telemetry: {
+		window_days: number;
+	};
+	kg: {
+		max_query_tokens: number;
+		index_inline_tokens: number;
+	};
+}
+
 export interface CrpManifest {
 	project: {
 		name: string;
@@ -24,6 +43,7 @@ export interface CrpManifest {
 		max_entry_proxy_tokens?: number;
 		max_rules_bloat_tokens?: number;
 	};
+	crp?: CrpConfig;
 }
 
 export interface SkillEntry {

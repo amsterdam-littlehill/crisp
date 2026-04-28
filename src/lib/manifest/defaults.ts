@@ -20,5 +20,23 @@ export function defaultManifest(
 			max_proxy_lines: DEFAULT_MAX_PROXY_LINES,
 		},
 		audit: { use_tiktoken: true },
+		crp: {
+			version: 3,
+			session_inject: {
+				max_tokens: 300,
+				include_kg_index: true,
+			},
+			tiers: {
+				inline_threshold: 0.5,
+				hint_threshold: 0.1,
+			},
+			telemetry: {
+				window_days: 30,
+			},
+			kg: {
+				max_query_tokens: 200,
+				index_inline_tokens: 80,
+			},
+		},
 	};
 }
