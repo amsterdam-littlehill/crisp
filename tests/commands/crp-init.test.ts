@@ -46,7 +46,7 @@ describe("crp-init.ts", () => {
 		expect(routes.skills).toBeArray();
 	});
 
-	test("creates crp.yaml with default config", () => {
+	test("creates crp.yaml at project root with default config", () => {
 		cmdCrpInit();
 		const yamlPath = join(tempDir, "crp.yaml");
 		expect(existsSync(yamlPath)).toBe(true);
@@ -55,15 +55,15 @@ describe("crp-init.ts", () => {
 		expect(content).toContain("version: 3");
 	});
 
-	test("installs hooks to .claude/settings.json", () => {
-		mkdirSync(join(tempDir, ".claude"), { recursive: true });
+	test("installs hooks to .claude/settings.local.json", () => {
 		cmdCrpInit();
-		const settingsPath = join(tempDir, ".claude", "settings.json");
+		const settingsPath = join(tempDir, ".claude", "settings.local.json");
 		expect(existsSync(settingsPath)).toBe(true);
 		const settings = JSON.parse(readFileSync(settingsPath, "utf-8"));
 		expect(settings.hooks).toBeDefined();
 		expect(settings.hooks.PostToolUse).toBeArray();
-		expect(settings.hooks.SessionStart).toBeArray();
+		// SessionStart should NOT be present (migrated to CLAUDE.md)
+		expect(settings.hooks.SessionStart).toBeUndefined();
 	});
 
 	test("dry-run does not create files", () => {
@@ -72,8 +72,7 @@ describe("crp-init.ts", () => {
 	});
 
 	test("does not overwrite existing crp.yaml", () => {
-		mkdirSync(join(tempDir, ".crp"), { recursive: true });
-		const yamlPath = join(tempDir, ".crp", "crp.yaml");
+		const yamlPath = join(tempDir, "crp.yaml");
 		writeFileSync(yamlPath, "existing: true", "utf-8");
 
 		cmdCrpInit();
@@ -91,12 +90,9 @@ describe("crp-init.ts", () => {
 		expect(routes.version).toBe(99);
 	});
 
-	test("copies hook scripts to .crp/hooks/", () => {
+	test("copies post-read.mjs hook script to .crp/hooks/", () => {
 		cmdCrpInit();
-		expect(existsSync(join(tempDir, ".crp", "hooks", "post-read.ts"))).toBe(
-			true,
-		);
-		expect(existsSync(join(tempDir, ".crp", "hooks", "session-start.ts"))).toBe(
+		expect(existsSync(join(tempDir, ".crp", "hooks", "post-read.mjs"))).toBe(
 			true,
 		);
 	});

@@ -38,12 +38,7 @@ describe("inject.ts", () => {
 		settingsPath = join(tempDir, ".claude", "settings.json");
 		crpDir = join(tempDir, ".crp");
 		mkdirSync(join(crpDir, "hooks"), { recursive: true });
-		writeFileSync(join(crpDir, "hooks", "post-read.ts"), "// dummy", "utf-8");
-		writeFileSync(
-			join(crpDir, "hooks", "session-start.ts"),
-			"// dummy",
-			"utf-8",
-		);
+		writeFileSync(join(crpDir, "hooks", "post-read.mjs"), "// dummy", "utf-8");
 	});
 
 	afterEach(() => {
@@ -51,15 +46,15 @@ describe("inject.ts", () => {
 	});
 
 	describe("installHooks", () => {
-		test("creates settings.json with hooks when none exists", () => {
+		test("creates settings.json with PostToolUse hook when none exists", () => {
 			installHooks(tempDir, settingsPath);
 
 			const settings = JSON.parse(readFileSync(settingsPath, "utf-8"));
 			expect(settings.hooks).toBeDefined();
 			expect(settings.hooks.PostToolUse).toBeArray();
-			expect(settings.hooks.SessionStart).toBeArray();
 			expect(settings.hooks.PostToolUse.length).toBe(1);
-			expect(settings.hooks.SessionStart.length).toBe(1);
+			// SessionStart should NOT be present (migrated to CLAUDE.md)
+			expect(settings.hooks.SessionStart).toBeUndefined();
 		});
 
 		test("does not duplicate hooks on repeated install", () => {
@@ -68,29 +63,49 @@ describe("inject.ts", () => {
 
 			const settings = JSON.parse(readFileSync(settingsPath, "utf-8"));
 			expect(settings.hooks.PostToolUse.length).toBe(1);
-			expect(settings.hooks.SessionStart.length).toBe(1);
 		});
 
-		test("hook command references correct script path", () => {
+		test("hook command references post-read.mjs script path", () => {
 			installHooks(tempDir, settingsPath);
 
 			const settings = JSON.parse(readFileSync(settingsPath, "utf-8"));
 			const postHook = settings.hooks.PostToolUse[0];
-			expect(postHook.command).toContain("post-read.ts");
 			expect(postHook.matcher).toBe("Read");
-			const startHook = settings.hooks.SessionStart[0];
-			expect(startHook.command).toContain("session-start.ts");
+			const innerHooks = postHook.hooks as Array<Record<string, unknown>>;
+			expect(innerHooks.length).toBe(1);
+			expect(innerHooks[0].type).toBe("command");
+			expect((innerHooks[0].command as string).includes("post-read.mjs")).toBe(true);
+		});
+
+		test("removes legacy SessionStart hook during install", () => {
+			// Pre-populate with a legacy SessionStart hook
+			mkdirSync(join(tempDir, ".claude"), { recursive: true });
+			const existingSettings = {
+				hooks: {
+					SessionStart: [{ command: 'bun run ".crp/hooks/session-start.ts"' }],
+				},
+			};
+			writeFileSync(
+				settingsPath,
+				JSON.stringify(existingSettings, null, 2),
+				"utf-8",
+			);
+
+			installHooks(tempDir, settingsPath);
+
+			const settings = JSON.parse(readFileSync(settingsPath, "utf-8"));
+			expect(settings.hooks?.SessionStart).toBeUndefined();
+			expect(settings.hooks?.PostToolUse).toBeDefined();
 		});
 	});
 
 	describe("removeHooks", () => {
-		test("removes both hooks from settings", () => {
+		test("removes PostToolUse hook from settings", () => {
 			installHooks(tempDir, settingsPath);
 			removeHooks(settingsPath);
 
 			const settings = JSON.parse(readFileSync(settingsPath, "utf-8"));
 			expect(settings.hooks?.PostToolUse).toBeUndefined();
-			expect(settings.hooks?.SessionStart).toBeUndefined();
 		});
 
 		test("is safe when settings.json does not exist", () => {
@@ -115,11 +130,12 @@ describe("inject.ts", () => {
 			expect(status.sessionStartActive).toBe(false);
 		});
 
-		test("returns true after installation", () => {
+		test("returns postReadActive true after installation", () => {
 			installHooks(tempDir, settingsPath);
 			const status = checkHookStatus(settingsPath);
 			expect(status.postReadActive).toBe(true);
-			expect(status.sessionStartActive).toBe(true);
+			// sessionStartActive should be false (SessionStart removed, CLAUDE.md handles injection)
+			expect(status.sessionStartActive).toBe(false);
 		});
 
 		test("returns false after removal", () => {

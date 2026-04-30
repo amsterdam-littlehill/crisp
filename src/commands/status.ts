@@ -1,8 +1,9 @@
 import { existsSync, readdirSync, readFileSync, statSync } from "node:fs";
 import { join } from "node:path";
-import { green, red, yellow } from "../lib/cli/colors";
-import { printError, printOk, printWarn } from "../lib/cli/format";
-import { checkHookStatus } from "../lib/crp/hooks/inject";
+import { dim, green, red, yellow } from "../lib/cli/colors";
+import { hasInjectionBlock, readClaudeMd } from "../lib/crp/claude-md";
+import { printError, printInfo, printOk, printWarn } from "../lib/cli/format";
+import { getDefaultAdapter } from "../lib/hooks/adapter";
 import { getSkillSourceDirs } from "../lib/crp/skill-source";
 import { loadManifest } from "../lib/manifest/io";
 
@@ -85,14 +86,22 @@ export function cmdStatus(): number {
 	}
 
 	// Hooks status
-	const hookStatus = checkHookStatus(settingsPath);
+	const adapter = getDefaultAdapter();
+	const hookStatus = adapter.checkStatus(projectDir);
 	const postReadIcon = hookStatus.postReadActive ? green("✓") : red("✗");
-	const sessionStartIcon = hookStatus.sessionStartActive
-		? green("✓")
-		: red("✗");
 	console.log(
-		`Hooks: PostToolUse ${postReadIcon}, SessionStart ${sessionStartIcon}`,
+		`Hooks: PostToolUse ${postReadIcon} (${adapter.name})`,
 	);
+
+	// CLAUDE.md status
+	const claudeMdContent = readClaudeMd(projectDir);
+	if (claudeMdContent === null) {
+		printWarn("CLAUDE.md: not found");
+	} else if (hasInjectionBlock(claudeMdContent)) {
+		printOk("CLAUDE.md: CRP injection block present");
+	} else {
+		printWarn("CLAUDE.md: exists but no CRP injection block");
+	}
 
 	// Skills count
 	const skillDirs = getSkillSourceDirs();

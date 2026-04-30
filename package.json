@@ -4,7 +4,16 @@
   "type": "module",
   "description": "CRP — Context Routing Protocol for AI agent skill orchestration",
   "license": "MIT",
+  "bin": {
+    "crp": "./dist/cli.js"
+  },
+  "files": [
+    "dist/",
+    "templates/"
+  ],
   "scripts": {
+    "build": "bun build src/cli.ts --outdir dist/ --target node --format esm",
+    "prepublishOnly": "bun run build",
     "test": "bun test",
     "lint": "bunx biome check src/ tests/",
     "lint:fix": "bunx biome check --write src/ tests/",

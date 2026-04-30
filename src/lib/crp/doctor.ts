@@ -1,7 +1,8 @@
 import { existsSync, statSync, unlinkSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { getEncoding } from "js-tiktoken";
-import { checkHookStatus } from "./hooks/inject";
+import { hasInjectionBlock, readClaudeMd } from "./claude-md";
+import { getDefaultAdapter } from "../hooks/adapter";
 
 export interface DoctorCheck {
 	name: string;
@@ -14,14 +15,13 @@ export async function runDoctorChecks(
 ): Promise<DoctorCheck[]> {
 	const checks: DoctorCheck[] = [];
 
-	// 1. Bun runtime
-	const hasBun = typeof process.versions.bun !== "undefined";
+	// 1. Node.js runtime (hooks now use node, not bun)
 	checks.push({
-		name: "Bun runtime",
-		status: hasBun ? "ok" : "fail",
-		message: hasBun
-			? `Bun ${process.versions.bun}`
-			: "Bun not detected. CRP hooks require Bun.",
+		name: "Node.js runtime",
+		status: typeof process.versions.node !== "undefined" ? "ok" : "fail",
+		message: typeof process.versions.node !== "undefined"
+			? `Node.js ${process.versions.node}`
+			: "Node.js not detected. CRP hooks require Node.js.",
 	});
 
 	// 2. .crp/ directory writable
@@ -43,19 +43,41 @@ export async function runDoctorChecks(
 		message: crpWritable ? "Writable" : `Not writable or missing: ${crpDir}`,
 	});
 
-	// 3. Hooks registered
-	const settingsPath = join(projectDir, ".claude", "settings.json");
-	const hookStatus = checkHookStatus(settingsPath);
-	const hooksOk = hookStatus.postReadActive && hookStatus.sessionStartActive;
+	// 3. CLAUDE.md injection block
+	const claudeMdContent = readClaudeMd(projectDir);
+	if (claudeMdContent === null) {
+		checks.push({
+			name: "CLAUDE.md injection",
+			status: "warn",
+			message: "CLAUDE.md not found. Run 'crp init' to create it.",
+		});
+	} else if (hasInjectionBlock(claudeMdContent)) {
+		checks.push({
+			name: "CLAUDE.md injection",
+			status: "ok",
+			message: "CRP injection block present",
+		});
+	} else {
+		checks.push({
+			name: "CLAUDE.md injection",
+			status: "warn",
+			message: "CLAUDE.md exists but has no CRP injection block. Run 'crp init' to add one.",
+		});
+	}
+
+	// 4. Hooks registered
+	const adapter = getDefaultAdapter();
+	const hookStatus = adapter.checkStatus(projectDir);
+	const hooksOk = hookStatus.postReadActive;
 	checks.push({
 		name: "Hooks registered",
 		status: hooksOk ? "ok" : "warn",
 		message: hooksOk
-			? "PostToolUse and SessionStart hooks active"
-			: `PostToolUse: ${hookStatus.postReadActive ? "yes" : "no"}, SessionStart: ${hookStatus.sessionStartActive ? "yes" : "no"}`,
+			? `PostToolUse hook active (${adapter.name})`
+			: `PostToolUse: ${hookStatus.postReadActive ? "yes" : "no"}`,
 	});
 
-	// 4. reads.jsonl recent records
+	// 5. reads.jsonl recent records
 	const readsPath = join(crpDir, "telemetry", "reads.jsonl");
 	let readsStatus: "ok" | "warn" | "fail" = "warn";
 	let readsMessage = "No reads.jsonl found";
@@ -80,7 +102,7 @@ export async function runDoctorChecks(
 		message: readsMessage,
 	});
 
-	// 5. js-tiktoken available
+	// 6. js-tiktoken available
 	let tiktokenOk = false;
 	try {
 		getEncoding("cl100k_base");
