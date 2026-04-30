@@ -62,7 +62,9 @@ export function cmdKgSync(options: { skill?: string | null }): number {
 	// Rebuild the unified KG index from all .crp-kg.json files
 	const index = buildKgIndex();
 	saveKgIndex(index);
-	console.log(`[INDEX] .crp/kg/index.json rebuilt (${index.chunks.length} chunks)`);
+	console.log(
+		`[INDEX] .crp/kg/index.json rebuilt (${index.chunks.length} chunks)`,
+	);
 
 	return 0;
 }

@@ -61,9 +61,10 @@ describe("buildInjection", () => {
 		const result = buildInjection(routes, 50);
 		expect(result.truncated).toBe(true);
 		expect(result.droppedSkills.length).toBeGreaterThan(0);
-		// Dead skills should be dropped first
-		expect(result.droppedSkills).toContain("dead-1");
+		// Lowest-freq dead skill dropped first; no inline or lazy dropped
 		expect(result.droppedSkills).toContain("dead-2");
+		expect(result.droppedSkills).not.toContain("inline-1");
+		expect(result.droppedSkills).not.toContain("lazy-1");
 	});
 
 	test("KG topics correctly appended", () => {

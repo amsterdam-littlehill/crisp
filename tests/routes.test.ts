@@ -29,7 +29,7 @@ describe("generateRoutes", () => {
 		const routes = generateRoutes(baseManifest, freqs);
 		const skill = routes.skills.find((s) => s.name === "skill-a");
 		expect(skill).toBeDefined();
-		expect(skill!.strategy).toBe("inline");
+		expect(skill?.strategy).toBe("inline");
 	});
 
 	test("high frequency user skill demoted to lazy", () => {
@@ -45,7 +45,7 @@ describe("generateRoutes", () => {
 		const routes = generateRoutes(baseManifest, freqs);
 		const skill = routes.skills.find((s) => s.name === "user-skill");
 		expect(skill).toBeDefined();
-		expect(skill!.strategy).toBe("lazy");
+		expect(skill?.strategy).toBe("lazy");
 	});
 
 	test("zero frequency skill marked as lazy", () => {
@@ -61,7 +61,7 @@ describe("generateRoutes", () => {
 		const routes = generateRoutes(baseManifest, freqs);
 		const skill = routes.skills.find((s) => s.name === "new-skill");
 		expect(skill).toBeDefined();
-		expect(skill!.strategy).toBe("lazy");
+		expect(skill?.strategy).toBe("lazy");
 	});
 
 	test("low frequency skill marked as dead", () => {
@@ -77,7 +77,7 @@ describe("generateRoutes", () => {
 		const routes = generateRoutes(baseManifest, freqs);
 		const skill = routes.skills.find((s) => s.name === "low-skill");
 		expect(skill).toBeDefined();
-		expect(skill!.strategy).toBe("dead");
+		expect(skill?.strategy).toBe("dead");
 	});
 
 	test("thresholds can be overridden via options", () => {
@@ -96,6 +96,6 @@ describe("generateRoutes", () => {
 		});
 		const skill = routes.skills.find((s) => s.name === "skill-a");
 		expect(skill).toBeDefined();
-		expect(skill!.strategy).toBe("inline");
+		expect(skill?.strategy).toBe("inline");
 	});
 });

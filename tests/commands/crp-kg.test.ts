@@ -1,8 +1,16 @@
 import { afterEach, beforeEach, describe, expect, test } from "bun:test";
-import { existsSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import {
+	existsSync,
+	mkdirSync,
+	mkdtempSync,
+	readFileSync,
+	rmSync,
+	writeFileSync,
+} from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { cmdCrpKg } from "../../src/commands/crp-kg";
+import { cmdKgSync } from "../../src/commands/kg";
 import { queryKg } from "../../src/lib/crp/kg-index";
 
 describe("crp-kg.ts", () => {
@@ -68,10 +76,15 @@ describe("crp-kg.ts", () => {
 			"utf-8",
 		);
 
-		const { cmdKgSync } = require("../../src/commands/kg");
 		const exitCode = cmdKgSync({ skill: "backend" });
 		expect(exitCode).toBe(0);
 		expect(existsSync(join(tempDir, ".crp", "kg", "index.json"))).toBe(true);
+
+		// Verify index contains expected chunks
+		const index = JSON.parse(
+			readFileSync(join(tempDir, ".crp", "kg", "index.json"), "utf-8"),
+		);
+		expect(index.chunks.length).toBeGreaterThan(0);
 
 		// Verify kg query works after sync
 		const queryResult = queryKg("backend", 200, tempDir);

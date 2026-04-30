@@ -1,7 +1,7 @@
 import { existsSync, readdirSync, readFileSync, statSync } from "node:fs";
 import { join } from "node:path";
-import { dim, green, red, yellow } from "../lib/cli/colors";
-import { printError, printInfo, printOk, printWarn } from "../lib/cli/format";
+import { green, red, yellow } from "../lib/cli/colors";
+import { printError, printOk, printWarn } from "../lib/cli/format";
 import { checkHookStatus } from "../lib/crp/hooks/inject";
 import { getSkillSourceDirs } from "../lib/crp/skill-source";
 import { loadManifest } from "../lib/manifest/io";

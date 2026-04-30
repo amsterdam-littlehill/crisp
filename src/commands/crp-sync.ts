@@ -35,7 +35,7 @@ export function cmdCrpSync(options: SyncOptions = {}): number {
 	const crpDir = join(projectDir, ".crp");
 	const readsPath = join(crpDir, "telemetry", "reads.jsonl");
 	const routesPath = join(crpDir, "routes.json");
-	const manifestPath = join(crpDir, "crp.yaml");
+	const manifestPath = join(projectDir, "crp.yaml");
 
 	// Load manifest for thresholds
 	const manifest = loadManifest(manifestPath);

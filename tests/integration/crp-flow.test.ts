@@ -12,14 +12,12 @@ import { join } from "node:path";
 import { cmdCrpAudit } from "../../src/commands/crp-audit";
 import { cmdCrpCheck } from "../../src/commands/crp-check";
 import { cmdCrpInit } from "../../src/commands/crp-init";
-import { cmdCrpKg } from "../../src/commands/crp-kg";
 import { cmdCrpSync } from "../../src/commands/crp-sync";
 import { cmdKgSync } from "../../src/commands/kg";
 import { cmdSkillCreate, cmdSkillDelete } from "../../src/commands/skill";
 import { cmdTelemetryReport } from "../../src/commands/telemetry";
 import { queryKg } from "../../src/lib/crp/kg-index";
-import { loadManifest, saveManifest } from "../../src/lib/manifest/io";
-import type { CrpManifest } from "../../src/lib/manifest/types";
+import { loadManifest } from "../../src/lib/manifest/io";
 
 describe("CRP end-to-end flow", () => {
 	let tempDir: string;
@@ -63,13 +61,21 @@ describe("CRP end-to-end flow", () => {
 		expect(existsSync(join(tempDir, ".crp"))).toBe(true);
 
 		// 2. Create skill via CLI
-		expect(cmdSkillCreate({ name: "backend", description: "Backend dev" })).toBe(0);
-		expect(existsSync(join(tempDir, ".claude", "skills", "backend"))).toBe(true);
-		expect(existsSync(join(tempDir, ".claude", "skills", "backend", "SKILL.md"))).toBe(true);
+		expect(
+			cmdSkillCreate({ name: "backend", description: "Backend dev" }),
+		).toBe(0);
+		expect(existsSync(join(tempDir, ".claude", "skills", "backend"))).toBe(
+			true,
+		);
+		expect(
+			existsSync(join(tempDir, ".claude", "skills", "backend", "SKILL.md")),
+		).toBe(true);
 
 		// Verify manifest updated
 		const manifestAfterCreate = loadManifest(join(tempDir, "crp.yaml"));
-		expect(manifestAfterCreate.skills?.some((s) => s.name === "backend")).toBe(true);
+		expect(manifestAfterCreate.skills?.some((s) => s.name === "backend")).toBe(
+			true,
+		);
 
 		// 3. Sync KG (generates .crp-kg.json AND builds index)
 		expect(cmdKgSync({ skill: "backend" })).toBe(0);
@@ -102,12 +108,16 @@ describe("CRP end-to-end flow", () => {
 
 		// 10. Skill delete cleans up
 		expect(cmdSkillDelete({ name: "backend", force: true })).toBe(0);
-		expect(existsSync(join(tempDir, ".claude", "skills", "backend"))).toBe(false);
+		expect(existsSync(join(tempDir, ".claude", "skills", "backend"))).toBe(
+			false,
+		);
 	});
 
 	test("check fails when injection is truncated", () => {
 		cmdCrpInit({ project: "trunc-test" });
-		expect(cmdSkillCreate({ name: "backend", description: "Backend dev" })).toBe(0);
+		expect(
+			cmdSkillCreate({ name: "backend", description: "Backend dev" }),
+		).toBe(0);
 
 		// Create an oversized routes.json that will truncate
 		const skills = Array.from({ length: 30 }, (_, i) => ({

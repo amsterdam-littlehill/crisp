@@ -48,7 +48,7 @@ describe("crp-init.ts", () => {
 
 	test("creates crp.yaml with default config", () => {
 		cmdCrpInit();
-		const yamlPath = join(tempDir, ".crp", "crp.yaml");
+		const yamlPath = join(tempDir, "crp.yaml");
 		expect(existsSync(yamlPath)).toBe(true);
 		const content = readFileSync(yamlPath, "utf-8");
 		expect(content).toContain("crp:");

@@ -48,12 +48,12 @@ describe("analyzeReads", () => {
 		const skillB = result.find((r) => r.name === "skill-b");
 
 		expect(skillA).toBeDefined();
-		expect(skillA!.freq).toBe(1.0); // 2 sessions / 2 total
-		expect(skillA!.sessions).toBe(2);
+		expect(skillA?.freq).toBe(1.0); // 2 sessions / 2 total
+		expect(skillA?.sessions).toBe(2);
 
 		expect(skillB).toBeDefined();
-		expect(skillB!.freq).toBe(0.5); // 1 session / 2 total
-		expect(skillB!.sessions).toBe(1);
+		expect(skillB?.freq).toBe(0.5); // 1 session / 2 total
+		expect(skillB?.sessions).toBe(1);
 	});
 
 	test("empty file returns empty array", () => {

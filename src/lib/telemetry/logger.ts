@@ -15,7 +15,7 @@ export interface TelemetryEvent {
 }
 
 export function recordReadEvent(event: TelemetryEvent): void {
-	const logPath = join(".crisp", "telemetry", "log.jsonl");
+	const logPath = join(".crp", "telemetry", "log.jsonl");
 	const dir = dirname(logPath);
 	if (!existsSync(dir)) {
 		mkdirSync(dir, { recursive: true });
@@ -37,7 +37,7 @@ export function recordReadEvent(event: TelemetryEvent): void {
 export function loadTelemetryLog(
 	logPath?: string,
 ): Array<Record<string, unknown>> {
-	const path = logPath || join(".crisp", "telemetry", "log.jsonl");
+	const path = logPath || join(".crp", "telemetry", "log.jsonl");
 	if (!existsSync(path)) return [];
 
 	const events: Array<Record<string, unknown>> = [];

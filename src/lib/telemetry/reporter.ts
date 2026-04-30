@@ -1,8 +1,8 @@
 import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
+import { extractSkillName } from "../crp/analyzer";
 import { loadManifest } from "../manifest/io";
 import { loadTelemetryLog } from "./logger";
-import { extractSkillName } from "../crp/analyzer";
 
 export function deriveSkipEvents(
 	kgPath: string,
@@ -83,7 +83,9 @@ export function deriveSkipEvents(
 	return skipEvents;
 }
 
-function loadRawReads(readsPath: string): Array<Record<string, unknown>> {
+export function loadRawReads(
+	readsPath: string,
+): Array<Record<string, unknown>> {
 	const events: Array<Record<string, unknown>> = [];
 	if (!existsSync(readsPath)) return events;
 
@@ -99,11 +101,13 @@ function loadRawReads(readsPath: string): Array<Record<string, unknown>> {
 		if (!line.trim()) continue;
 		try {
 			const rec = JSON.parse(line) as Record<string, unknown>;
+			if (!rec.file) continue;
 			events.push({
 				timestamp: rec.ts || rec.timestamp || new Date().toISOString(),
 				event_type: "READ",
 				file: rec.file,
-				skill: rec.skill || extractSkillName(String(rec.file || "")) || "unknown",
+				skill:
+					rec.skill || extractSkillName(String(rec.file || "")) || "unknown",
 				tokens: rec.tokens || 0,
 				tier: rec.tier || "L0",
 			});
@@ -125,7 +129,8 @@ export function runReport(skillName?: string | null): number {
 	const readsPath = join(".crp", "telemetry", "reads.jsonl");
 	const readEvents = loadRawReads(readsPath);
 
-	// Merge: log.jsonl takes precedence for duplicates (same file + timestamp)
+	// Merge both sources. Deduplicate only exact duplicates (same timestamp + file).
+	// log.jsonl events come first in the spread, so they take precedence.
 	const seen = new Set<string>();
 	const events: Array<Record<string, unknown>> = [];
 	for (const e of [...logEvents, ...readEvents]) {
