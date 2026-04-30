@@ -2,6 +2,7 @@ import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { loadManifest } from "../manifest/io";
 import { loadTelemetryLog } from "./logger";
+import { extractSkillName } from "../crp/analyzer";
 
 export function deriveSkipEvents(
 	kgPath: string,
@@ -82,6 +83,37 @@ export function deriveSkipEvents(
 	return skipEvents;
 }
 
+function loadRawReads(readsPath: string): Array<Record<string, unknown>> {
+	const events: Array<Record<string, unknown>> = [];
+	if (!existsSync(readsPath)) return events;
+
+	let content: string;
+	try {
+		content = readFileSync(readsPath, "utf-8").trim();
+	} catch {
+		return events;
+	}
+	if (!content) return events;
+
+	for (const line of content.split("\n")) {
+		if (!line.trim()) continue;
+		try {
+			const rec = JSON.parse(line) as Record<string, unknown>;
+			events.push({
+				timestamp: rec.ts || rec.timestamp || new Date().toISOString(),
+				event_type: "READ",
+				file: rec.file,
+				skill: rec.skill || extractSkillName(String(rec.file || "")) || "unknown",
+				tokens: rec.tokens || 0,
+				tier: rec.tier || "L0",
+			});
+		} catch {
+			// skip malformed
+		}
+	}
+	return events;
+}
+
 export function runReport(skillName?: string | null): number {
 	const manifest = loadManifest("crp.yaml");
 	if (!manifest.project) {
@@ -89,7 +121,19 @@ export function runReport(skillName?: string | null): number {
 		return 1;
 	}
 
-	const events = loadTelemetryLog();
+	const logEvents = loadTelemetryLog();
+	const readsPath = join(".crp", "telemetry", "reads.jsonl");
+	const readEvents = loadRawReads(readsPath);
+
+	// Merge: log.jsonl takes precedence for duplicates (same file + timestamp)
+	const seen = new Set<string>();
+	const events: Array<Record<string, unknown>> = [];
+	for (const e of [...logEvents, ...readEvents]) {
+		const key = `${e.timestamp || ""}::${e.file || ""}`;
+		if (seen.has(key)) continue;
+		seen.add(key);
+		events.push(e);
+	}
 
 	console.log("\n== CRP Telemetry Report ==\n");
 
@@ -99,17 +143,17 @@ export function runReport(skillName?: string | null): number {
 		return 0;
 	}
 
-	const readEvents = events.filter((e) => e.event_type === "READ");
-	const totalTokens = readEvents.reduce(
+	const readEventsFiltered = events.filter((e) => e.event_type === "READ");
+	const totalTokens = readEventsFiltered.reduce(
 		(sum, e) => sum + ((e.tokens as number) || 0),
 		0,
 	);
 
-	console.log(`Total READ events: ${readEvents.length}`);
+	console.log(`Total READ events: ${readEventsFiltered.length}`);
 	console.log(`Total tokens loaded: ${totalTokens.toLocaleString()}`);
 
 	const fileCounts: Record<string, number> = {};
-	for (const e of readEvents) {
+	for (const e of readEventsFiltered) {
 		const f = (e.file as string) || "unknown";
 		fileCounts[f] = (fileCounts[f] || 0) + 1;
 	}
