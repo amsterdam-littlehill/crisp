@@ -14,7 +14,10 @@ import { cmdCrpCheck } from "../../src/commands/crp-check";
 import { cmdCrpInit } from "../../src/commands/crp-init";
 import { cmdCrpKg } from "../../src/commands/crp-kg";
 import { cmdCrpSync } from "../../src/commands/crp-sync";
-import { buildKgIndex, saveKgIndex } from "../../src/lib/crp/kg-index";
+import { cmdKgSync } from "../../src/commands/kg";
+import { cmdSkillCreate, cmdSkillDelete } from "../../src/commands/skill";
+import { cmdTelemetryReport } from "../../src/commands/telemetry";
+import { queryKg } from "../../src/lib/crp/kg-index";
 import { loadManifest, saveManifest } from "../../src/lib/manifest/io";
 import type { CrpManifest } from "../../src/lib/manifest/types";
 
@@ -32,66 +35,6 @@ describe("CRP end-to-end flow", () => {
 		process.chdir(originalCwd);
 		rmSync(tempDir, { recursive: true, force: true });
 	});
-
-	function setupSkill(name: string) {
-		const skillDir = join(tempDir, ".claude", "skills", name);
-		mkdirSync(skillDir, { recursive: true });
-		writeFileSync(
-			join(skillDir, "SKILL.md"),
-			`# ${name}\n\n## Common Tasks\n\n- Task A\n- Task B\n`,
-			"utf-8",
-		);
-		writeFileSync(
-			join(skillDir, ".crp-kg.json"),
-			JSON.stringify({
-				project: name,
-				generated_at: new Date().toISOString(),
-				nodes: {
-					files: [
-						{
-							id: "f1",
-							path: "SKILL.md",
-							skill: name,
-							tier: "L0",
-							token_count: 100,
-							content_hash: "abc",
-							summary: `${name} skill summary`,
-						},
-					],
-					task_types: [
-						{
-							id: "t1",
-							keywords: ["api", "rest"],
-							description: "API tasks",
-							category: "dev",
-						},
-					],
-					tags: [
-						{
-							id: "tag1",
-							name: name,
-							category: "domain",
-						},
-					],
-				},
-				edges: [],
-			}),
-			"utf-8",
-		);
-	}
-
-	function addSkillToManifest(name: string) {
-		const manifestPath = join(tempDir, ".crp", "crp.yaml");
-		const manifest = loadManifest(manifestPath) as CrpManifest;
-		manifest.skills = manifest.skills || [];
-		manifest.skills.push({ name, description: `${name} skill` });
-		saveManifest(manifestPath, manifest);
-		// Also update root crp.yaml for consistency
-		const rootManifest = loadManifest(join(tempDir, "crp.yaml")) as CrpManifest;
-		rootManifest.skills = rootManifest.skills || [];
-		rootManifest.skills.push({ name, description: `${name} skill` });
-		saveManifest(join(tempDir, "crp.yaml"), rootManifest);
-	}
 
 	function writeMockReads(skillName: string, sessionCount: number) {
 		const telemetryDir = join(tempDir, ".crp", "telemetry");
@@ -119,19 +62,28 @@ describe("CRP end-to-end flow", () => {
 		expect(cmdCrpInit({ project: "flow-test" })).toBe(0);
 		expect(existsSync(join(tempDir, ".crp"))).toBe(true);
 
-		// 2. Setup skill and manifest
-		setupSkill("backend");
-		addSkillToManifest("backend");
+		// 2. Create skill via CLI
+		expect(cmdSkillCreate({ name: "backend", description: "Backend dev" })).toBe(0);
+		expect(existsSync(join(tempDir, ".claude", "skills", "backend"))).toBe(true);
+		expect(existsSync(join(tempDir, ".claude", "skills", "backend", "SKILL.md"))).toBe(true);
 
-		// 3. Build KG index
-		const index = buildKgIndex(tempDir);
-		saveKgIndex(index, tempDir);
+		// Verify manifest updated
+		const manifestAfterCreate = loadManifest(join(tempDir, "crp.yaml"));
+		expect(manifestAfterCreate.skills?.some((s) => s.name === "backend")).toBe(true);
+
+		// 3. Sync KG (generates .crp-kg.json AND builds index)
+		expect(cmdKgSync({ skill: "backend" })).toBe(0);
 		expect(existsSync(join(tempDir, ".crp", "kg", "index.json"))).toBe(true);
 
-		// 4. Simulate reads
+		// 4. Verify kg query works
+		const queryResult = queryKg("backend", 200, tempDir);
+		expect(queryResult).not.toContain("No KG index found");
+		expect(queryResult.length).toBeGreaterThan(0);
+
+		// 5. Simulate reads
 		writeMockReads("backend", 5);
 
-		// 5. Sync generates routes
+		// 6. Sync generates routes
 		expect(cmdCrpSync()).toBe(0);
 		const routesPath = join(tempDir, ".crp", "routes.json");
 		expect(existsSync(routesPath)).toBe(true);
@@ -139,21 +91,23 @@ describe("CRP end-to-end flow", () => {
 		expect(routes.version).toBe(3);
 		expect(routes.skills.length).toBeGreaterThan(0);
 
-		// 6. Audit runs without error
+		// 7. Audit runs without error
 		expect(cmdCrpAudit()).toBe(0);
 
-		// 7. Check passes
+		// 8. Check passes
 		expect(cmdCrpCheck()).toBe(0);
 
-		// 8. KG query returns results
-		const kgResult = cmdCrpKg("backend");
-		expect(kgResult).toBe(0);
+		// 9. Telemetry report reads both sources
+		expect(cmdTelemetryReport({ skill: null })).toBe(0);
+
+		// 10. Skill delete cleans up
+		expect(cmdSkillDelete({ name: "backend", force: true })).toBe(0);
+		expect(existsSync(join(tempDir, ".claude", "skills", "backend"))).toBe(false);
 	});
 
 	test("check fails when injection is truncated", () => {
 		cmdCrpInit({ project: "trunc-test" });
-		setupSkill("backend");
-		addSkillToManifest("backend");
+		expect(cmdSkillCreate({ name: "backend", description: "Backend dev" })).toBe(0);
 
 		// Create an oversized routes.json that will truncate
 		const skills = Array.from({ length: 30 }, (_, i) => ({
