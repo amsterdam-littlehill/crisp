@@ -1,6 +1,7 @@
 import { existsSync, readFileSync, statSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { printError, printOk, printWarn } from "../lib/cli/format";
+import { buildKgIndex, saveKgIndex } from "../lib/crp/kg-index";
 import { getSkillSourceDirs } from "../lib/crp/skill-source";
 import { generateKnowledgeGraph } from "../lib/kg/generator";
 import { validateKg } from "../lib/kg/validator";
@@ -57,6 +58,11 @@ export function cmdKgSync(options: { skill?: string | null }): number {
 		);
 		return 1;
 	}
+
+	// Rebuild the unified KG index from all .crp-kg.json files
+	const index = buildKgIndex();
+	saveKgIndex(index);
+	console.log(`[INDEX] .crp/kg/index.json rebuilt (${index.chunks.length} chunks)`);
 
 	return 0;
 }
