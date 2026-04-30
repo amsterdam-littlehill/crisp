@@ -33,6 +33,46 @@ crisp 是 Context Router Protocol（CRP）的单一 Bun + TypeScript 实现。�
 - 从 CRP 结构中构建并校验知识图谱
 - 追踪 telemetry 日志与 hook 状态
 - 校验 injection 是否在 token 预算内
+- 原生 Claude Code 插件：自动生成 `CLAUDE.md` 与 hooks
+
+## Claude Code 插件
+
+CRP 为 **Claude Code**（CLI、桌面端和 IDE 插件）提供原生集成。运行 `crp init` 或 `crp sync` 时，CLI 会自动：
+
+- 生成或更新项目根目录的 `CLAUDE.md`，包含 CRP 路由规则、skills 与层级配置
+- 向 `~/.claude/settings.json` 注入 `PostToolUse` hook，用于捕获 `Read` 事件并记录遥测
+- 写入 `post-read.mjs` hook 脚本，将文件读取记录保存到 `.crp/telemetry/reads.jsonl`
+
+这意味着 Claude Code 会话会自动遵循项目的上下文治理规则，无需手动复制粘贴。
+
+### 工作原理
+
+1. **CLAUDE.md 生成** — `crp init` 会在项目根目录创建 `CLAUDE.md`，包含：
+   - 来自 `crp.yaml` 的项目名称与描述
+   - Skill 路由表（哪些文件对应哪个 skill）
+   - 层级定义（hot、warm、cold、L0–L4）
+   - Markdown 标记（`<!-- CRP_INJECT_START/END -->`），以便再次运行 `crp sync` 时仅更新注入区域
+
+2. **Hook 注入** — `crp init` 会自动检测你使用的是 Claude Code CLI 还是 Claude Desktop，并写入对应的 hook 格式：
+   - **Claude Code CLI**：`settings.json` 中的嵌套 `hooks` 数组
+   - **Claude Desktop**：`settings.local.json` 中的扁平 `hooks` 对象
+
+3. **遥测** — Claude Code 中每次 `Read` 工具调用都会触发 hook，记录：
+   - 时间戳、会话 ID、文件路径与 token 估算
+   - 数据写入 `.crp/telemetry/reads.jsonl`，运行 `crp telemetry report` 时会与 `log.jsonl` 合并
+
+### 手动设置（如果你跳过了 init）
+
+```bash
+# 仅生成 CLAUDE.md
+bun run src/cli.ts sync --claude-md
+
+# 检查 hook 状态
+bun run src/cli.ts doctor
+
+# 查看遥测报告
+bun run src/cli.ts telemetry report
+```
 
 ## 仓库结构
 
@@ -147,6 +187,14 @@ bun run lint
 ```
 
 `tests/` 目录已经覆盖 CRP 路由、injection、审计、知识图谱同步、遥测钩子、manifest 校验以及集成行为等核心模块。
+
+## 平台支持
+
+- **运行时**：Bun（`bun test` 与 `bun run` 必需）
+- **AI 助手**：Claude Code CLI、Claude Desktop 与 Claude IDE 插件
+  - Hooks 面向 `~/.claude/settings.json`（CLI）或 `~/.claude/settings.local.json`（Desktop）
+  - 自动生成的 `CLAUDE.md` 会被所有 Claude Code 客户端自动加载
+- 其他平台可能可用，但当前未正式支持。
 
 ## 当前状态与兼容性
 

@@ -33,6 +33,46 @@ crisp is a single Bun + TypeScript implementation of the Context Router Protocol
 - Build and validate a knowledge graph from CRP structures
 - Track telemetry logs and hook status
 - Verify injection fits within token budget
+- Native Claude Code plugin: auto-generate `CLAUDE.md` and hooks
+
+## Claude Code Plugin
+
+CRP provides first-class integration with **Claude Code** (the CLI, desktop, and IDE extensions). When you run `crp init` or `crp sync`, the CLI automatically:
+
+- Generates or updates `CLAUDE.md` with your project's CRP routing rules, skills, and tier configuration
+- Injects a `PostToolUse` hook into `~/.claude/settings.json` to capture `Read` events for telemetry
+- Writes a `post-read.mjs` hook script that records file reads to `.crp/telemetry/reads.jsonl`
+
+This means Claude Code sessions automatically respect your project's context governance without manual copy-paste.
+
+### How it works
+
+1. **CLAUDE.md generation** — `crp init` creates a `CLAUDE.md` file in your project root. It includes:
+   - Project name and description from `crp.yaml`
+   - Skill routing table (which files map to which skill)
+   - Tier definitions (hot, warm, cold, L0–L4)
+   - Markdown markers (`<!-- CRP_INJECT_START/END -->`) so re-running `crp sync` updates only the injected section
+
+2. **Hook injection** — `crp init` detects whether you use Claude Code CLI or Claude Desktop and writes the correct hook format:
+   - **Claude Code CLI**: nested `hooks` array in `settings.json`
+   - **Claude Desktop**: flat `hooks` object in `settings.local.json`
+
+3. **Telemetry** — Every `Read` tool call in Claude Code triggers the hook, which logs:
+   - Timestamp, session ID, file path, and token estimate
+   - Data is written to `.crp/telemetry/reads.jsonl` and merged with `log.jsonl` when you run `crp telemetry report`
+
+### Manual setup (if you skipped init)
+
+```bash
+# Generate CLAUDE.md only
+bun run src/cli.ts sync --claude-md
+
+# Check hook status
+bun run src/cli.ts doctor
+
+# View telemetry report
+bun run src/cli.ts telemetry report
+```
 
 ## Repository layout
 
@@ -149,7 +189,9 @@ The `tests/` directory includes coverage for core modules such as CRP routing, i
 ## Platform Support
 
 - **Runtime**: Bun (required for `bun test` and `bun run`)
-- **AI Assistant**: Claude Desktop (hooks target `.claude/settings.json`)
+- **AI Assistant**: Claude Code CLI, Claude Desktop, and Claude IDE extensions
+  - Hooks target `~/.claude/settings.json` (CLI) or `~/.claude/settings.local.json` (Desktop)
+  - Auto-generated `CLAUDE.md` is picked up automatically by all Claude Code clients
 - Other platforms may work but are not currently supported.
 
 ## Current status and compatibility
