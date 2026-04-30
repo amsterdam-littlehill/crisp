@@ -1,30 +1,23 @@
 project:
   name: crisp
-  description: Context-Router Protocol reference implementation
+  description: CRP reference
 skills: []
-knowledge_graph:
-  enabled: true
-  max_tokens_execution: 1500
-  max_tokens_synthesis: 800
-  max_tokens_cross_domain: 1200
-  hot_cache_files: []
-budget_audit:
-  max_gateway_tokens: 1000
-  max_entry_proxy_tokens: 200
-  max_rules_bloat_tokens: 3000
+default_skill: null
 checks:
   max_gateway_lines: 100
   max_proxy_lines: 60
 audit:
   use_tiktoken: true
-context_pressure:
-  window_size: 200000
-  soft_threshold: 0.6
-  hard_threshold: 0.75
-  emergency_threshold: 0.85
-quality_scoring:
-  min_production_score: 7
-  dimensions:
-    - explicit_ratio
-    - attention_alignment
-    - completeness
+crp:
+  version: 3
+  session_inject:
+    max_tokens: 300
+    include_kg_index: true
+  tiers:
+    inline_threshold: 0.5
+    hint_threshold: 0.1
+  telemetry:
+    window_days: 30
+  kg:
+    max_query_tokens: 200
+    index_inline_tokens: 80

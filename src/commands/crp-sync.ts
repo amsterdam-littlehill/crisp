@@ -1,8 +1,10 @@
-import { readdirSync, writeFileSync } from "node:fs";
+import { existsSync, readdirSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { analyzeReads } from "../lib/crp/analyzer";
+import { hasInjectionBlock, updateClaudeMd } from "../lib/crp/claude-md";
 import { generateRoutes } from "../lib/crp/routes";
 import { getSkillSourceDirs, type SkillSource } from "../lib/crp/skill-source";
+import { printOk, printWarn } from "../lib/cli/format";
 import { loadManifest } from "../lib/manifest/io";
 import type { CrpManifest } from "../lib/manifest/types";
 
@@ -106,6 +108,30 @@ export function cmdCrpSync(options: SyncOptions = {}): number {
 
 	// Write routes.json
 	writeFileSync(routesPath, `${JSON.stringify(routes, null, 2)}\n`, "utf-8");
+
+	// Update CLAUDE.md injection block
+	const claudeMdPath = join(projectDir, "CLAUDE.md");
+	if (existsSync(claudeMdPath)) {
+		const { readFileSync: readFile } = require("node:fs");
+		const content = readFile(claudeMdPath, "utf-8");
+		if (hasInjectionBlock(content)) {
+			const mdResult = updateClaudeMd(projectDir, routes, manifest as CrpManifest);
+			if (mdResult.updated) {
+				printOk("CLAUDE.md injection updated");
+			} else {
+				printOk("CLAUDE.md already up to date");
+			}
+		} else {
+			printWarn(
+				"CLAUDE.md has no CRP injection block — run 'crp init' to add one",
+			);
+		}
+	} else {
+		const mdResult = updateClaudeMd(projectDir, routes, manifest as CrpManifest);
+		if (mdResult.created) {
+			printOk("CLAUDE.md created with CRP injection block");
+		}
+	}
 
 	// Output stats
 	console.log("[CRP] Sync complete.");

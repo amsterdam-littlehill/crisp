@@ -5,7 +5,8 @@ import {
 	statSync,
 	writeFileSync,
 } from "node:fs";
-import { join } from "node:path";
+import { dirname, join } from "node:path";
+import { fileURLToPath } from "node:url";
 
 export function copySkillTemplate(
 	targetDir: string,
@@ -14,7 +15,7 @@ export function copySkillTemplate(
 	project: string,
 	shadow: boolean = false,
 ): void {
-	const src = join(import.meta.dirname, "..", "..", "..", "templates", "skill");
+	const src = join(dirname(fileURLToPath(import.meta.url)), "..", "..", "templates", "skill");
 
 	if (!statSync(src, { throwIfNoEntry: false })?.isDirectory()) {
 		console.error(`ERROR: Template directory not found: ${src}`);

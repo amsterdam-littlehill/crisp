@@ -2,6 +2,7 @@ import { describe, expect, test } from "bun:test";
 import {
 	existsSync,
 	mkdtempSync,
+	mkdirSync,
 	readFileSync,
 	rmSync,
 	writeFileSync,
@@ -18,6 +19,7 @@ import {
 	loadTelemetryLog,
 	recordReadEvent,
 } from "../../src/lib/telemetry/logger";
+import { runReport } from "../../src/lib/telemetry/reporter";
 
 describe("recordReadEvent", () => {
 	test("creates log file with event", () => {
@@ -236,6 +238,52 @@ describe("checkHookStatus", () => {
 			const status = checkHookStatus(settingsPath);
 			expect(status.active).toBe(true);
 		} finally {
+			rmSync(dir, { recursive: true, force: true });
+		}
+	});
+});
+
+describe("runReport", () => {
+	test("reads reads.jsonl when log.jsonl is empty", () => {
+		const dir = mkdtempSync(join(tmpdir(), "crisp-report-"));
+		const originalCwd = process.cwd();
+		process.chdir(dir);
+
+		// Create reads.jsonl (from post-read hook)
+		mkdirSync(join(dir, ".crp", "telemetry"), { recursive: true });
+		const reads = [
+			{ ts: "2026-04-30T10:00:00Z", session_id: "s1", file: "skills/backend/SKILL.md", tokens: 450 },
+			{ ts: "2026-04-30T10:05:00Z", session_id: "s1", file: "skills/backend/SKILL.md", tokens: 450 },
+		];
+		writeFileSync(
+			join(dir, ".crp", "telemetry", "reads.jsonl"),
+			reads.map((r) => JSON.stringify(r)).join("\n") + "\n",
+			"utf-8",
+		);
+
+		// Create crp.yaml so runReport doesn't exit early
+		writeFileSync(
+			join(dir, "crp.yaml"),
+			"project:\n  name: test\n",
+			"utf-8",
+		);
+
+		const logs: string[] = [];
+		const originalLog = console.log;
+		console.log = (...args: unknown[]) => {
+			logs.push(args.join(" "));
+		};
+
+		try {
+			const code = runReport();
+			expect(code).toBe(0);
+			const output = logs.join("\n");
+			expect(output).toContain("Total READ events: 2");
+			expect(output).toContain("Total tokens loaded: 900");
+			expect(output).toContain("skills/backend/SKILL.md");
+		} finally {
+			console.log = originalLog;
+			process.chdir(originalCwd);
 			rmSync(dir, { recursive: true, force: true });
 		}
 	});

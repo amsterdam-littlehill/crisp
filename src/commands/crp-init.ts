@@ -1,9 +1,12 @@
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { copyFileSync, existsSync, mkdirSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { printOk, printWarn } from "../lib/cli/format";
-import { installHooks } from "../lib/crp/hooks/inject";
+import { updateClaudeMd } from "../lib/crp/claude-md";
 import { defaultManifest } from "../lib/manifest/defaults";
-import { saveManifest } from "../lib/manifest/io";
+import { loadManifest, saveManifest } from "../lib/manifest/io";
+import type { CrpManifest } from "../lib/manifest/types";
+import { getDefaultAdapter } from "../lib/hooks/adapter";
+import { TEMPLATES_DIR } from "../lib/fs/paths";
 
 export interface InitOptions {
 	dryRun?: boolean;
@@ -14,7 +17,7 @@ export interface InitOptions {
 export function cmdCrpInit(options: InitOptions = {}): number {
 	const projectDir = process.cwd();
 	const crpDir = join(projectDir, ".crp");
-	const settingsPath = join(projectDir, ".claude", "settings.json");
+	const adapter = getDefaultAdapter();
 
 	if (options.dryRun) {
 		printWarn("[DRY RUN] Would create .crp/ directory structure:");
@@ -24,8 +27,9 @@ export function cmdCrpInit(options: InitOptions = {}): number {
 		console.log("  .crp/hooks/");
 		console.log("  .crp/cache/");
 		console.log("  .crp/logs/");
-		console.log("  .crp/README.md");
-		printWarn("[DRY RUN] Would install hooks to .claude/settings.json");
+		console.log(`  ${adapter.name === "claude-code" ? ".claude/settings.local.json" : ".claude/settings.json"}`);
+		console.log("  CLAUDE.md (with CRP injection block)");
+		printWarn("[DRY RUN] Would install PostToolUse hook for telemetry");
 		return 0;
 	}
 
@@ -41,15 +45,14 @@ export function cmdCrpInit(options: InitOptions = {}): number {
 		mkdirSync(dir, { recursive: true });
 	}
 
-	// Copy hook scripts from package to .crp/hooks/
-	const hookSrcDir = join(import.meta.dirname, "..", "lib", "crp", "hooks");
-	const hookFiles = ["post-read.ts", "session-start.ts"];
+	// Copy post-read.mjs hook script to .crp/hooks/
+	const hookSrcDir = join(TEMPLATES_DIR, "hooks");
+	const hookFiles = ["post-read.mjs"];
 	for (const file of hookFiles) {
 		const src = join(hookSrcDir, file);
 		const dst = join(crpDir, "hooks", file);
 		if (existsSync(src) && !existsSync(dst)) {
-			const content = readFileSync(src, "utf-8");
-			writeFileSync(dst, content, "utf-8");
+			copyFileSync(src, dst);
 		}
 	}
 
@@ -63,15 +66,22 @@ export function cmdCrpInit(options: InitOptions = {}): number {
 		);
 	}
 
-	// Create crp.yaml if not exists (root for backward compatibility)
+	// Create crp.yaml if not exists
 	const rootYamlPath = join(projectDir, "crp.yaml");
+	let manifest: CrpManifest;
 	if (!existsSync(rootYamlPath)) {
-		const manifest = defaultManifest(
+		manifest = defaultManifest(
 			options.project || "my-project",
 			options.description,
 		);
 		saveManifest(rootYamlPath, manifest);
+	} else {
+		manifest = loadManifest(rootYamlPath) as CrpManifest;
 	}
+
+	// Generate CLAUDE.md with initial injection block
+	const routes = { version: 3, skills: [] };
+	const result = updateClaudeMd(projectDir, routes, manifest);
 
 	// Create .crp/README.md
 	const readmePath = join(crpDir, "README.md");
@@ -83,12 +93,17 @@ export function cmdCrpInit(options: InitOptions = {}): number {
 		);
 	}
 
-	// Install hooks
-	installHooks(projectDir, settingsPath);
+	// Install hooks via adapter
+	adapter.install(projectDir);
 
 	printOk("Initialized successfully.");
 	console.log("  .crp/ directory created");
-	console.log("  Hooks installed to .claude/settings.json");
+	console.log(`  Hooks installed to ${adapter.settingsPath(projectDir)}`);
+	if (result.created) {
+		console.log("  CLAUDE.md created with CRP injection block");
+	} else if (result.updated) {
+		console.log("  CLAUDE.md updated with CRP injection block");
+	}
 	console.log("");
 	console.log("Next steps:");
 	console.log("  1. Create a skill:   crp skill create <name>");

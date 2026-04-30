@@ -1,9 +1,20 @@
 import { existsSync } from "node:fs";
-import { join, resolve } from "node:path";
+import { dirname, join, resolve } from "node:path";
+import { fileURLToPath } from "node:url";
 
-const SCRIPT_DIR = resolve(import.meta.dirname, "..", "..");
-const PROJECT_ROOT = resolve(".");
-export const TEMPLATES_DIR = join(SCRIPT_DIR, "..", "templates");
+// Standard ESM __dirname — works in both Bun and Node.js after bundling
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
+
+// When bundled to dist/cli.js: __dirname = .../dist, so go up one level to project root
+// When running from source: __dirname = .../src/lib/fs, so go up 3 levels
+// Detect which structure we're in at runtime by checking for a known template file
+const distTemplates = resolve(__dirname, "..", "templates");
+const srcTemplates = resolve(__dirname, "..", "..", "..", "templates");
+export const TEMPLATES_DIR = existsSync(join(distTemplates, "hooks", "post-read.mjs"))
+	? distTemplates
+	: srcTemplates;
+const PROJECT_ROOT = dirname(TEMPLATES_DIR);
 export const SKILLS_DIR = join(PROJECT_ROOT, ".claude", "skills");
 
 export function projectPath(...segments: string[]): string {

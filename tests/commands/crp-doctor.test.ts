@@ -2,7 +2,6 @@ import { afterEach, beforeEach, describe, expect, test } from "bun:test";
 import {
 	mkdirSync,
 	mkdtempSync,
-	readFileSync,
 	rmSync,
 	writeFileSync,
 } from "node:fs";
@@ -42,10 +41,12 @@ describe("crp-doctor.ts", () => {
 						PostToolUse: [
 							{
 								matcher: "Read",
-								command:
-									'bun run "' +
-									join(tempDir, ".crp", "hooks", "post-read.ts") +
-									'"',
+								hooks: [
+									{
+										type: "command",
+										command: `node "${join(tempDir, ".crp", "hooks", "post-read.mjs")}"`,
+									},
+								],
 							},
 						],
 						SessionStart: [

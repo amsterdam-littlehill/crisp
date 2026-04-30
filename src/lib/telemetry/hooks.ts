@@ -1,18 +1,9 @@
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
-import { dirname, join } from "node:path";
+import { join } from "node:path";
+import { loadSettings, saveSettings } from "../fs/settings";
 
 export function injectHook(settingsPath: string): void {
-	let settings: Record<string, unknown> = {};
-
-	if (existsSync(settingsPath)) {
-		try {
-			settings = JSON.parse(readFileSync(settingsPath, "utf-8"));
-		} catch {
-			settings = {};
-		}
-	} else {
-		mkdirSync(dirname(settingsPath), { recursive: true });
-	}
+	const settings = loadSettings(settingsPath);
 
 	if (!settings.hooks) {
 		settings.hooks = {};
@@ -40,53 +31,50 @@ export function injectHook(settingsPath: string): void {
 		command: hookCommand,
 	});
 
-	writeFileSync(
-		settingsPath,
-		`${JSON.stringify(settings, null, 2)}\n`,
-		"utf-8",
-	);
+	saveSettings(settingsPath, settings);
 	console.log(`Hook injected into ${settingsPath}`);
 
 	const hookDir = join(".claude", "hooks");
 	mkdirSync(hookDir, { recursive: true });
 
 	const hookScript = join(hookDir, "telemetry-hook.ts");
-	const hookContent = `/**
- * telemetry-hook.ts — PostToolUse hook for telemetry.
- *
- * CRITICAL: This hook must never throw exceptions.
- * All errors are logged to .crp/telemetry/errors.log
- */
-import { appendFileSync, mkdirSync, existsSync } from "node:fs";
-
-const readIdx = process.argv.indexOf("--read");
-const filePath = readIdx !== -1 ? process.argv[readIdx + 1] : undefined;
-if (!filePath) process.exit(0);
-
-const logDir = ".crp/telemetry";
-if (!existsSync(logDir)) mkdirSync(logDir, { recursive: true });
-
-try {
-  const record = JSON.stringify({
-    timestamp: new Date().toISOString(),
-    event_type: "READ",
-    file: filePath,
-    skill: "unknown",
-    tokens: 0,
-    tier: "unknown",
-    load_reason: "user_request",
-  });
-  appendFileSync(\`\${logDir}/log.jsonl\`, record + "\\n", "utf-8");
-} catch (e) {
-  const errorLog = \`\${logDir}/errors.log\`;
-  try {
-    appendFileSync(errorLog, \`\${new Date().toISOString()}: \${String(e)}\\n\`, "utf-8");
-  } catch {
-    // Can't even log the error — silently fail
-  }
-  process.exit(0);
-}
-`;
+	const hookContent = [
+		"/**",
+		" * telemetry-hook.ts — PostToolUse hook for telemetry.",
+		" *",
+		" * CRITICAL: This hook must never throw exceptions.",
+		" * All errors are logged to .crp/telemetry/errors.log",
+		" */",
+		'import { appendFileSync, mkdirSync, existsSync } from "node:fs";',
+		"",
+		'const readIdx = process.argv.indexOf("--read");',
+		"const filePath = readIdx !== -1 ? process.argv[readIdx + 1] : undefined;",
+		"if (!filePath) process.exit(0);",
+		"",
+		'const logDir = ".crp/telemetry";',
+		"if (!existsSync(logDir)) mkdirSync(logDir, { recursive: true });",
+		"",
+		"try {",
+		"  const record = JSON.stringify({",
+		"    timestamp: new Date().toISOString(),",
+		'    event_type: "READ",',
+		"    file: filePath,",
+		'    skill: "unknown",',
+		"    tokens: 0,",
+		'    tier: "unknown",',
+		'    load_reason: "user_request",',
+		"  });",
+		'  appendFileSync(`${logDir}/log.jsonl`, record + "\\\\n", "utf-8");',
+		"} catch (e) {",
+		"  const errorLog = `${logDir}/errors.log`;",
+		"  try {",
+		'    appendFileSync(errorLog, `${new Date().toISOString()}: ${String(e)}\\\\n`, "utf-8");',
+		"  } catch {",
+		"    // Can't even log the error — silently fail",
+		"  }",
+		"  process.exit(0);",
+		"}",
+	].join("\n");
 	writeFileSync(hookScript, hookContent, "utf-8");
 	console.log(`Hook script created: ${hookScript}`);
 
@@ -104,13 +92,7 @@ export function removeHook(settingsPath: string): void {
 		return;
 	}
 
-	let settings: Record<string, unknown>;
-	try {
-		settings = JSON.parse(readFileSync(settingsPath, "utf-8"));
-	} catch {
-		console.log("No settings.json found");
-		return;
-	}
+	const settings = loadSettings(settingsPath);
 
 	const hooks = settings.hooks as Record<string, unknown> | undefined;
 	if (!hooks?.PostToolUse) {
@@ -144,11 +126,7 @@ export function removeHook(settingsPath: string): void {
 			?.length ??
 		0 < originalCount
 	) {
-		writeFileSync(
-			settingsPath,
-			`${JSON.stringify(settings, null, 2)}\n`,
-			"utf-8",
-		);
+		saveSettings(settingsPath, settings);
 		console.log("Hook removed");
 	} else {
 		console.log("No telemetry hook found");
