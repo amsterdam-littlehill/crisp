@@ -15,7 +15,14 @@ export function copySkillTemplate(
 	project: string,
 	shadow: boolean = false,
 ): void {
-	const src = join(dirname(fileURLToPath(import.meta.url)), "..", "..", "..", "templates", "skill");
+	const src = join(
+		dirname(fileURLToPath(import.meta.url)),
+		"..",
+		"..",
+		"..",
+		"templates",
+		"skill",
+	);
 
 	if (!statSync(src, { throwIfNoEntry: false })?.isDirectory()) {
 		console.error(`ERROR: Template directory not found: ${src}`);

@@ -74,7 +74,9 @@ describe("inject.ts", () => {
 			const innerHooks = postHook.hooks as Array<Record<string, unknown>>;
 			expect(innerHooks.length).toBe(1);
 			expect(innerHooks[0].type).toBe("command");
-			expect((innerHooks[0].command as string).includes("post-read.mjs")).toBe(true);
+			expect((innerHooks[0].command as string).includes("post-read.mjs")).toBe(
+				true,
+			);
 		});
 
 		test("removes legacy SessionStart hook during install", () => {

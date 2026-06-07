@@ -92,6 +92,32 @@ export function buildInjection(
 		return estimateTokens(parts.join("\n"));
 	}
 
+	function replaceBucket(
+		prefix: string,
+		bucket: SkillItem[],
+		render: () => string,
+	): void {
+		const idx = parts.findIndex((p) => p.startsWith(prefix));
+		if (idx < 0) return;
+		if (bucket.length === 0) {
+			parts.splice(idx, 1);
+			return;
+		}
+		parts[idx] = render();
+	}
+
+	function dropWholeBucket(
+		bucket: SkillItem[],
+		prefix: string,
+		render: () => string,
+	): void {
+		while (bucket.length > 0) {
+			const removed = bucket.pop();
+			if (removed) droppedSkills.push(removed.name);
+		}
+		replaceBucket(prefix, bucket, render);
+	}
+
 	if (currentTokenCount() <= maxTokens) {
 		return { text: parts.join("\n"), truncated: false, droppedSkills: [] };
 	}
@@ -99,33 +125,21 @@ export function buildInjection(
 	truncated = true;
 
 	// Drop dead candidates (lowest priority)
-	while (dead.length > 0 && currentTokenCount() > maxTokens) {
-		const removed = dead.pop();
-		if (!removed) break;
-		droppedSkills.push(removed.name);
-		const idx = parts.findIndex((p) => p.startsWith("Dead candidate:"));
-		if (idx >= 0) {
-			if (dead.length === 0) {
-				parts.splice(idx, 1);
-			} else {
-				parts[idx] = `Dead candidate: ${dead.map((i) => i.text).join(", ")}.`;
-			}
-		}
+	if (dead.length > 0 && currentTokenCount() > maxTokens) {
+		dropWholeBucket(
+			dead,
+			"Dead candidate:",
+			() => `Dead candidate: ${dead.map((i) => i.text).join(", ")}.`,
+		);
 	}
 
 	// Drop lazy skills
-	while (lazy.length > 0 && currentTokenCount() > maxTokens) {
-		const removed = lazy.pop();
-		if (!removed) break;
-		droppedSkills.push(removed.name);
-		const idx = parts.findIndex((p) => p.startsWith("On-demand:"));
-		if (idx >= 0) {
-			if (lazy.length === 0) {
-				parts.splice(idx, 1);
-			} else {
-				parts[idx] = `On-demand: ${lazy.map((i) => i.text).join(", ")}.`;
-			}
-		}
+	if (lazy.length > 0 && currentTokenCount() > maxTokens) {
+		dropWholeBucket(
+			lazy,
+			"On-demand:",
+			() => `On-demand: ${lazy.map((i) => i.text).join(", ")}.`,
+		);
 	}
 
 	// Drop inline skills (lowest freq first = end of array)
@@ -133,14 +147,11 @@ export function buildInjection(
 		const removed = inline.pop();
 		if (!removed) break;
 		droppedSkills.push(removed.name);
-		const idx = parts.findIndex((p) => p.startsWith("Inline:"));
-		if (idx >= 0) {
-			if (inline.length === 0) {
-				parts.splice(idx, 1);
-			} else {
-				parts[idx] = `Inline: ${inline.map((i) => i.text).join(", ")}.`;
-			}
-		}
+		replaceBucket(
+			"Inline:",
+			inline,
+			() => `Inline: ${inline.map((i) => i.text).join(", ")}.`,
+		);
 	}
 
 	// Drop KG if still over limit

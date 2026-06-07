@@ -1,8 +1,8 @@
 import { existsSync, statSync, unlinkSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { getEncoding } from "js-tiktoken";
-import { hasInjectionBlock, readClaudeMd } from "./claude-md";
 import { getDefaultAdapter } from "../hooks/adapter";
+import { hasInjectionBlock, readClaudeMd } from "./claude-md";
 
 export interface DoctorCheck {
 	name: string;
@@ -19,9 +19,10 @@ export async function runDoctorChecks(
 	checks.push({
 		name: "Node.js runtime",
 		status: typeof process.versions.node !== "undefined" ? "ok" : "fail",
-		message: typeof process.versions.node !== "undefined"
-			? `Node.js ${process.versions.node}`
-			: "Node.js not detected. CRP hooks require Node.js.",
+		message:
+			typeof process.versions.node !== "undefined"
+				? `Node.js ${process.versions.node}`
+				: "Node.js not detected. CRP hooks require Node.js.",
 	});
 
 	// 2. .crp/ directory writable
@@ -61,7 +62,8 @@ export async function runDoctorChecks(
 		checks.push({
 			name: "CLAUDE.md injection",
 			status: "warn",
-			message: "CLAUDE.md exists but has no CRP injection block. Run 'crp init' to add one.",
+			message:
+				"CLAUDE.md exists but has no CRP injection block. Run 'crp init' to add one.",
 		});
 	}
 

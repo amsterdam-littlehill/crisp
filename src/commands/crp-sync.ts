@@ -1,10 +1,11 @@
 import { existsSync, readdirSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
+import { printOk, printWarn } from "../lib/cli/format";
 import { analyzeReads } from "../lib/crp/analyzer";
 import { hasInjectionBlock, updateClaudeMd } from "../lib/crp/claude-md";
+import { updateCodexInstructions } from "../lib/crp/codex-instructions";
 import { generateRoutes } from "../lib/crp/routes";
 import { getSkillSourceDirs, type SkillSource } from "../lib/crp/skill-source";
-import { printOk, printWarn } from "../lib/cli/format";
 import { loadManifest } from "../lib/manifest/io";
 import type { CrpManifest } from "../lib/manifest/types";
 
@@ -115,7 +116,11 @@ export function cmdCrpSync(options: SyncOptions = {}): number {
 		const { readFileSync: readFile } = require("node:fs");
 		const content = readFile(claudeMdPath, "utf-8");
 		if (hasInjectionBlock(content)) {
-			const mdResult = updateClaudeMd(projectDir, routes, manifest as CrpManifest);
+			const mdResult = updateClaudeMd(
+				projectDir,
+				routes,
+				manifest as CrpManifest,
+			);
 			if (mdResult.updated) {
 				printOk("CLAUDE.md injection updated");
 			} else {
@@ -127,10 +132,27 @@ export function cmdCrpSync(options: SyncOptions = {}): number {
 			);
 		}
 	} else {
-		const mdResult = updateClaudeMd(projectDir, routes, manifest as CrpManifest);
+		const mdResult = updateClaudeMd(
+			projectDir,
+			routes,
+			manifest as CrpManifest,
+		);
 		if (mdResult.created) {
 			printOk("CLAUDE.md created with CRP injection block");
 		}
+	}
+
+	const codexResult = updateCodexInstructions(
+		projectDir,
+		routes,
+		manifest as CrpManifest,
+	);
+	if (codexResult.created) {
+		printOk(".codex/instructions.md created with CRP injection block");
+	} else if (codexResult.updated) {
+		printOk(".codex/instructions.md updated with CRP injection block");
+	} else {
+		printOk(".codex/instructions.md already up to date");
 	}
 
 	// Output stats

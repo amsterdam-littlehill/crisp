@@ -11,7 +11,9 @@ const __dirname = dirname(__filename);
 // Detect which structure we're in at runtime by checking for a known template file
 const distTemplates = resolve(__dirname, "..", "templates");
 const srcTemplates = resolve(__dirname, "..", "..", "..", "templates");
-export const TEMPLATES_DIR = existsSync(join(distTemplates, "hooks", "post-read.mjs"))
+export const TEMPLATES_DIR = existsSync(
+	join(distTemplates, "hooks", "post-read.mjs"),
+)
 	? distTemplates
 	: srcTemplates;
 const PROJECT_ROOT = dirname(TEMPLATES_DIR);

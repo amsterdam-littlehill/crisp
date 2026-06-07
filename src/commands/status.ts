@@ -1,10 +1,10 @@
 import { existsSync, readdirSync, readFileSync, statSync } from "node:fs";
 import { join } from "node:path";
-import { dim, green, red, yellow } from "../lib/cli/colors";
+import { green, red, yellow } from "../lib/cli/colors";
+import { printError, printOk, printWarn } from "../lib/cli/format";
 import { hasInjectionBlock, readClaudeMd } from "../lib/crp/claude-md";
-import { printError, printInfo, printOk, printWarn } from "../lib/cli/format";
-import { getDefaultAdapter } from "../lib/hooks/adapter";
 import { getSkillSourceDirs } from "../lib/crp/skill-source";
+import { getDefaultAdapter } from "../lib/hooks/adapter";
 import { loadManifest } from "../lib/manifest/io";
 
 function formatBytes(bytes: number): string {
@@ -41,7 +41,6 @@ export function cmdStatus(): number {
 	const crpDir = join(projectDir, ".crp");
 	const routesPath = join(crpDir, "routes.json");
 	const telemetryPath = join(crpDir, "telemetry", "reads.jsonl");
-	const settingsPath = join(projectDir, ".claude", "settings.json");
 
 	console.log("== CRP Status ==\n");
 
@@ -89,9 +88,7 @@ export function cmdStatus(): number {
 	const adapter = getDefaultAdapter();
 	const hookStatus = adapter.checkStatus(projectDir);
 	const postReadIcon = hookStatus.postReadActive ? green("✓") : red("✗");
-	console.log(
-		`Hooks: PostToolUse ${postReadIcon} (${adapter.name})`,
-	);
+	console.log(`Hooks: PostToolUse ${postReadIcon} (${adapter.name})`);
 
 	// CLAUDE.md status
 	const claudeMdContent = readClaudeMd(projectDir);

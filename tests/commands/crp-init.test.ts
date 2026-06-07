@@ -96,4 +96,17 @@ describe("crp-init.ts", () => {
 			true,
 		);
 	});
+
+	test("creates Codex instructions with a CRP injection block", () => {
+		cmdCrpInit({ project: "codex-app" });
+
+		const instructionsPath = join(tempDir, ".codex", "instructions.md");
+		expect(existsSync(instructionsPath)).toBe(true);
+
+		const content = readFileSync(instructionsPath, "utf-8");
+		expect(content).toContain("# codex-app - Codex Instructions");
+		expect(content).toContain("<!-- CRP_INJECT_START -->");
+		expect(content).toContain("[CRP Router]");
+		expect(content).toContain("<!-- CRP_INJECT_END -->");
+	});
 });

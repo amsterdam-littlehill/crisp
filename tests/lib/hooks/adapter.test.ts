@@ -97,12 +97,11 @@ describe("ClaudeCodeAdapter", () => {
 		const settings = JSON.parse(readFileSync(settingsPath, "utf-8"));
 		const postToolUse = (settings.hooks as Record<string, unknown>)
 			.PostToolUse as Array<Record<string, unknown>>;
-		const postReadHooks = postToolUse.filter(
-			(h) =>
-				(h.hooks as Array<Record<string, unknown>>)?.some(
-					(ih) =>
-						typeof ih.command === "string" && ih.command.includes("post-read"),
-				),
+		const postReadHooks = postToolUse.filter((h) =>
+			(h.hooks as Array<Record<string, unknown>>)?.some(
+				(ih) =>
+					typeof ih.command === "string" && ih.command.includes("post-read"),
+			),
 		);
 		expect(postReadHooks.length).toBe(1);
 	});
@@ -167,7 +166,7 @@ describe("detectAdapter", () => {
 
 		const adapter = detectAdapter(tempDir);
 		expect(adapter).not.toBeNull();
-		expect(adapter!.name).toBe("claude-code");
+		expect(adapter?.name).toBe("claude-code");
 	});
 
 	test("returns ClaudeDesktopAdapter when only settings.json exists", () => {
@@ -177,7 +176,7 @@ describe("detectAdapter", () => {
 
 		const adapter = detectAdapter(tempDir);
 		expect(adapter).not.toBeNull();
-		expect(adapter!.name).toBe("claude-desktop");
+		expect(adapter?.name).toBe("claude-desktop");
 	});
 
 	test("returns null when no settings files exist", () => {

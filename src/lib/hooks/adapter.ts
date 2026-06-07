@@ -1,5 +1,5 @@
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
-import { dirname, join } from "node:path";
+import { existsSync, readFileSync } from "node:fs";
+import { join } from "node:path";
 import { loadSettings, saveSettings } from "../fs/settings";
 
 export interface HookStatus {
@@ -34,12 +34,14 @@ function hasPostRead(hooks: Record<string, unknown>): boolean {
 	const arr = hooks.hooks as Array<Record<string, unknown>> | undefined;
 	if (arr) {
 		return arr.some(
-			(h) =>
-				typeof h.command === "string" && h.command.includes("post-read"),
+			(h) => typeof h.command === "string" && h.command.includes("post-read"),
 		);
 	}
 	// Legacy format: flat command field
-	if (typeof hooks.command === "string" && hooks.command.includes("post-read")) {
+	if (
+		typeof hooks.command === "string" &&
+		hooks.command.includes("post-read")
+	) {
 		return true;
 	}
 	return false;
@@ -118,10 +120,7 @@ export class ClaudeCodeAdapter implements HookAdapter {
 		// Remove PostToolUse hook
 		if (hooks.PostToolUse) {
 			const postToolUse = hooks.PostToolUse as Array<Record<string, unknown>>;
-			const filtered = postToolUse.filter(
-				(h) =>
-					!hasPostRead(h),
-			);
+			const filtered = postToolUse.filter((h) => !hasPostRead(h));
 			if (filtered.length === 0) {
 				delete hooks.PostToolUse;
 			} else {
@@ -256,10 +255,7 @@ export class ClaudeDesktopAdapter implements HookAdapter {
 		// Remove PostToolUse hook
 		if (hooks.PostToolUse) {
 			const postToolUse = hooks.PostToolUse as Array<Record<string, unknown>>;
-			const filtered = postToolUse.filter(
-				(h) =>
-					!hasPostRead(h),
-			);
+			const filtered = postToolUse.filter((h) => !hasPostRead(h));
 			if (filtered.length === 0) {
 				delete hooks.PostToolUse;
 			} else {

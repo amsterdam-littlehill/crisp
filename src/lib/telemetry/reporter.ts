@@ -1,6 +1,5 @@
 import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
-import { extractSkillName } from "../crp/analyzer";
 import { loadManifest } from "../manifest/io";
 import { loadTelemetryLog } from "./logger";
 
@@ -83,39 +82,33 @@ export function deriveSkipEvents(
 	return skipEvents;
 }
 
-export function loadRawReads(
-	readsPath: string,
-): Array<Record<string, unknown>> {
-	const events: Array<Record<string, unknown>> = [];
-	if (!existsSync(readsPath)) return events;
+function loadReportReadEvents(): Array<Record<string, unknown>> {
+	const events = loadTelemetryLog();
+	const readEvents = events.filter((e) => e.event_type === "READ");
+	if (readEvents.length > 0) return readEvents;
 
-	let content: string;
+	const readsPath = join(".crp", "telemetry", "reads.jsonl");
+	if (!existsSync(readsPath)) return [];
+
 	try {
-		content = readFileSync(readsPath, "utf-8").trim();
-	} catch {
-		return events;
-	}
-	if (!content) return events;
+		const content = readFileSync(readsPath, "utf-8").trim();
+		if (!content) return [];
 
-	for (const line of content.split("\n")) {
-		if (!line.trim()) continue;
-		try {
-			const rec = JSON.parse(line) as Record<string, unknown>;
-			if (!rec.file) continue;
-			events.push({
-				timestamp: rec.ts || rec.timestamp || new Date().toISOString(),
-				event_type: "READ",
-				file: rec.file,
-				skill:
-					rec.skill || extractSkillName(String(rec.file || "")) || "unknown",
-				tokens: rec.tokens || 0,
-				tier: rec.tier || "L0",
+		return content
+			.split("\n")
+			.map((line) => line.trim())
+			.filter(Boolean)
+			.flatMap((line) => {
+				try {
+					const rec = JSON.parse(line) as Record<string, unknown>;
+					return [{ ...rec, event_type: "READ" }];
+				} catch {
+					return [];
+				}
 			});
-		} catch {
-			// skip malformed
-		}
+	} catch {
+		return [];
 	}
-	return events;
 }
 
 export function runReport(skillName?: string | null): number {
@@ -125,40 +118,26 @@ export function runReport(skillName?: string | null): number {
 		return 1;
 	}
 
-	const logEvents = loadTelemetryLog();
-	const readsPath = join(".crp", "telemetry", "reads.jsonl");
-	const readEvents = loadRawReads(readsPath);
-
-	// Merge both sources. Deduplicate only exact duplicates (same timestamp + file).
-	// log.jsonl events come first in the spread, so they take precedence.
-	const seen = new Set<string>();
-	const events: Array<Record<string, unknown>> = [];
-	for (const e of [...logEvents, ...readEvents]) {
-		const key = `${e.timestamp || ""}::${e.file || ""}`;
-		if (seen.has(key)) continue;
-		seen.add(key);
-		events.push(e);
-	}
+	const readEvents = loadReportReadEvents();
 
 	console.log("\n== CRP Telemetry Report ==\n");
 
-	if (events.length === 0) {
+	if (readEvents.length === 0) {
 		console.log("No telemetry events recorded");
 		console.log("\nRun 'crp telemetry start' to begin recording");
 		return 0;
 	}
 
-	const readEventsFiltered = events.filter((e) => e.event_type === "READ");
-	const totalTokens = readEventsFiltered.reduce(
+	const totalTokens = readEvents.reduce(
 		(sum, e) => sum + ((e.tokens as number) || 0),
 		0,
 	);
 
-	console.log(`Total READ events: ${readEventsFiltered.length}`);
+	console.log(`Total READ events: ${readEvents.length}`);
 	console.log(`Total tokens loaded: ${totalTokens.toLocaleString()}`);
 
 	const fileCounts: Record<string, number> = {};
-	for (const e of readEventsFiltered) {
+	for (const e of readEvents) {
 		const f = (e.file as string) || "unknown";
 		fileCounts[f] = (fileCounts[f] || 0) + 1;
 	}

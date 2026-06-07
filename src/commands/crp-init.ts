@@ -2,11 +2,12 @@ import { copyFileSync, existsSync, mkdirSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { printOk, printWarn } from "../lib/cli/format";
 import { updateClaudeMd } from "../lib/crp/claude-md";
+import { updateCodexInstructions } from "../lib/crp/codex-instructions";
+import { TEMPLATES_DIR } from "../lib/fs/paths";
+import { getDefaultAdapter } from "../lib/hooks/adapter";
 import { defaultManifest } from "../lib/manifest/defaults";
 import { loadManifest, saveManifest } from "../lib/manifest/io";
 import type { CrpManifest } from "../lib/manifest/types";
-import { getDefaultAdapter } from "../lib/hooks/adapter";
-import { TEMPLATES_DIR } from "../lib/fs/paths";
 
 export interface InitOptions {
 	dryRun?: boolean;
@@ -27,8 +28,11 @@ export function cmdCrpInit(options: InitOptions = {}): number {
 		console.log("  .crp/hooks/");
 		console.log("  .crp/cache/");
 		console.log("  .crp/logs/");
-		console.log(`  ${adapter.name === "claude-code" ? ".claude/settings.local.json" : ".claude/settings.json"}`);
+		console.log(
+			`  ${adapter.name === "claude-code" ? ".claude/settings.local.json" : ".claude/settings.json"}`,
+		);
 		console.log("  CLAUDE.md (with CRP injection block)");
+		console.log("  .codex/instructions.md (with CRP injection block)");
 		printWarn("[DRY RUN] Would install PostToolUse hook for telemetry");
 		return 0;
 	}
@@ -82,6 +86,7 @@ export function cmdCrpInit(options: InitOptions = {}): number {
 	// Generate CLAUDE.md with initial injection block
 	const routes = { version: 3, skills: [] };
 	const result = updateClaudeMd(projectDir, routes, manifest);
+	const codexResult = updateCodexInstructions(projectDir, routes, manifest);
 
 	// Create .crp/README.md
 	const readmePath = join(crpDir, "README.md");
@@ -103,6 +108,11 @@ export function cmdCrpInit(options: InitOptions = {}): number {
 		console.log("  CLAUDE.md created with CRP injection block");
 	} else if (result.updated) {
 		console.log("  CLAUDE.md updated with CRP injection block");
+	}
+	if (codexResult.created) {
+		console.log("  .codex/instructions.md created with CRP injection block");
+	} else if (codexResult.updated) {
+		console.log("  .codex/instructions.md updated with CRP injection block");
 	}
 	console.log("");
 	console.log("Next steps:");

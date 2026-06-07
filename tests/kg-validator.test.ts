@@ -99,7 +99,13 @@ describe("validateKg", () => {
 				task_types: [],
 				tags: [],
 			},
-			edges: [{ from: "", to: "f1", type: "REQUIRES" } as any],
+			edges: [
+				{
+					from: "",
+					to: "f1",
+					type: "REQUIRES",
+				} as unknown as KnowledgeGraph["edges"][number],
+			],
 		};
 		const errors = validateKg(kg);
 		expect(errors).toContain("edges[0] missing 'from'");
@@ -124,7 +130,13 @@ describe("validateKg", () => {
 				task_types: [],
 				tags: [],
 			},
-			edges: [{ from: "f1", to: "", type: "REQUIRES" } as any],
+			edges: [
+				{
+					from: "f1",
+					to: "",
+					type: "REQUIRES",
+				} as unknown as KnowledgeGraph["edges"][number],
+			],
 		};
 		const errors = validateKg(kg);
 		expect(errors).toContain("edges[0] missing 'to'");
@@ -149,7 +161,9 @@ describe("validateKg", () => {
 				task_types: [],
 				tags: [],
 			},
-			edges: [{ from: "f1", to: "f1" } as any],
+			edges: [
+				{ from: "f1", to: "f1" } as unknown as KnowledgeGraph["edges"][number],
+			],
 		};
 		const errors = validateKg(kg);
 		expect(errors).toContain("edges[0] missing 'type'");

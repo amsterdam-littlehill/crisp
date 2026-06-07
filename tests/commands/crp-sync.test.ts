@@ -101,6 +101,7 @@ describe("crp-sync.ts", () => {
 		const exitCode = cmdCrpSync({ check: true });
 		expect(exitCode).toBe(0);
 		expect(existsSync(join(tempDir, ".crp", "routes.json"))).toBe(false);
+		expect(existsSync(join(tempDir, ".codex", "instructions.md"))).toBe(false);
 	});
 
 	test("works with empty telemetry", () => {
@@ -113,5 +114,41 @@ describe("crp-sync.ts", () => {
 		expect(existsSync(routesPath)).toBe(true);
 		const routes = JSON.parse(readFileSync(routesPath, "utf-8"));
 		expect(routes.skills).toBeEmpty();
+	});
+
+	test("updates Codex instructions from generated routes", () => {
+		const now = new Date().toISOString();
+		writeReads([
+			{
+				ts: now,
+				session_id: "s1",
+				file: "/project/.claude/skills/backend/SKILL.md",
+				tokens: 10,
+			},
+		]);
+
+		writeManifest(
+			[
+				"project:",
+				"  name: codex-sync-test",
+				"skills: []",
+				"crp:",
+				"  version: 3",
+				"  session_inject:",
+				"    max_tokens: 300",
+			].join("\n"),
+		);
+
+		const exitCode = cmdCrpSync();
+		expect(exitCode).toBe(0);
+
+		const instructionsPath = join(tempDir, ".codex", "instructions.md");
+		expect(existsSync(instructionsPath)).toBe(true);
+
+		const content = readFileSync(instructionsPath, "utf-8");
+		expect(content).toContain("# codex-sync-test - Codex Instructions");
+		expect(content).toContain("<!-- CRP_INJECT_START -->");
+		expect(content).toContain("backend");
+		expect(content).toContain("<!-- CRP_INJECT_END -->");
 	});
 });

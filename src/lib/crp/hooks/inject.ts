@@ -17,12 +17,14 @@ function hasPostRead(hooks: Record<string, unknown>): boolean {
 	const arr = hooks.hooks as Array<Record<string, unknown>> | undefined;
 	if (arr) {
 		return arr.some(
-			(h) =>
-				typeof h.command === "string" && h.command.includes("post-read"),
+			(h) => typeof h.command === "string" && h.command.includes("post-read"),
 		);
 	}
 	// Legacy format: flat command field
-	if (typeof hooks.command === "string" && hooks.command.includes("post-read")) {
+	if (
+		typeof hooks.command === "string" &&
+		hooks.command.includes("post-read")
+	) {
 		return true;
 	}
 	return false;
@@ -57,9 +59,7 @@ export function installHooks(projectDir: string, settingsPath: string): void {
 		const sessionStart = hooks.SessionStart as Array<Record<string, unknown>>;
 		const filtered = sessionStart.filter(
 			(h) =>
-				!(
-					typeof h.command === "string" && h.command.includes("session-start")
-				),
+				!(typeof h.command === "string" && h.command.includes("session-start")),
 		);
 		if (filtered.length === 0) {
 			delete hooks.SessionStart;
@@ -89,10 +89,7 @@ export function removeHooks(settingsPath: string): void {
 	// Remove PostToolUse hook
 	if (hooks.PostToolUse) {
 		const postToolUse = hooks.PostToolUse as Array<Record<string, unknown>>;
-		const filtered = postToolUse.filter(
-			(h) =>
-				!hasPostRead(h),
-		);
+		const filtered = postToolUse.filter((h) => !hasPostRead(h));
 		if (filtered.length === 0) {
 			delete hooks.PostToolUse;
 		} else {
@@ -105,9 +102,7 @@ export function removeHooks(settingsPath: string): void {
 		const sessionStart = hooks.SessionStart as Array<Record<string, unknown>>;
 		const filtered = sessionStart.filter(
 			(h) =>
-				!(
-					typeof h.command === "string" && h.command.includes("session-start")
-				),
+				!(typeof h.command === "string" && h.command.includes("session-start")),
 		);
 		if (filtered.length === 0) {
 			delete hooks.SessionStart;

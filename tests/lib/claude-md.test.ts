@@ -101,7 +101,7 @@ describe("updateClaudeMd", () => {
 
 		const content = readClaudeMd(tempDir);
 		expect(content).not.toBeNull();
-		expect(hasInjectionBlock(content!)).toBe(true);
+		expect(hasInjectionBlock(content ?? "")).toBe(true);
 	});
 
 	test("preserves user content when updating existing markers", () => {
@@ -117,11 +117,12 @@ describe("updateClaudeMd", () => {
 		expect(result.created).toBe(false);
 		expect(result.updated).toBe(true);
 
-		const content = readClaudeMd(tempDir)!;
-		expect(content.includes("My Project")).toBe(true);
-		expect(content.includes("project description")).toBe(true);
-		expect(content.includes("[CRP Router]")).toBe(true);
-		expect(content.includes("old content")).toBe(false);
+		const content = readClaudeMd(tempDir);
+		expect(content).not.toBeNull();
+		expect(content?.includes("My Project")).toBe(true);
+		expect(content?.includes("project description")).toBe(true);
+		expect(content?.includes("[CRP Router]")).toBe(true);
+		expect(content?.includes("old content")).toBe(false);
 	});
 
 	test("appends injection block when no markers exist", () => {
@@ -132,9 +133,10 @@ describe("updateClaudeMd", () => {
 		expect(result.created).toBe(false);
 		expect(result.updated).toBe(true);
 
-		const content = readClaudeMd(tempDir)!;
-		expect(content.includes("Just content.")).toBe(true);
-		expect(hasInjectionBlock(content)).toBe(true);
+		const content = readClaudeMd(tempDir);
+		expect(content).not.toBeNull();
+		expect(content?.includes("Just content.")).toBe(true);
+		expect(hasInjectionBlock(content ?? "")).toBe(true);
 	});
 
 	test("returns updated=false when content unchanged", () => {

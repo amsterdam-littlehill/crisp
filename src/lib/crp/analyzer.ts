@@ -16,7 +16,7 @@ export interface SkillFrequency {
 }
 
 export function extractSkillName(filePath: string): string | null {
-	const m1 = filePath.match(/([^\\/]+)\.skill\.md$/);
+	const m1 = filePath.match(/([^\\/]+)\.skill\.md$/i);
 	if (m1) return m1[1];
 	const m2 = filePath.match(/(?:^|[\\/])skills[\\/]([^\\/]+)[\\/]SKILL\.md$/i);
 	if (m2) return m2[1];

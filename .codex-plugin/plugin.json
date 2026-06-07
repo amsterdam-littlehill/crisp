@@ -1,0 +1,35 @@
+{
+  "name": "crisp",
+  "version": "0.5.0",
+  "description": "Context Router Protocol for reducing Codex context token usage.",
+  "author": {
+    "name": "CRISP"
+  },
+  "license": "MIT",
+  "keywords": [
+    "context",
+    "token",
+    "routing",
+    "codex",
+    "skills"
+  ],
+  "skills": "./skills/",
+  "interface": {
+    "displayName": "CRISP",
+    "shortDescription": "Reduce Codex context usage with routed project instructions.",
+    "longDescription": "CRISP helps structure project instructions, route task context, sync agent entrypoints, and audit token budgets so Codex reads only the context needed for the current task.",
+    "developerName": "CRISP",
+    "category": "Productivity",
+    "capabilities": [
+      "Context Routing",
+      "Token Budgeting",
+      "Project Scaffolding"
+    ],
+    "defaultPrompt": [
+      "Initialize CRP routing for this project.",
+      "Audit this project's CRP token budget.",
+      "Sync CRP routes and Codex instructions."
+    ],
+    "brandColor": "#0F766E"
+  }
+}
