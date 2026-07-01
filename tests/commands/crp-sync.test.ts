@@ -34,7 +34,7 @@ describe("crp-sync.ts", () => {
 	}
 
 	function writeManifest(content: string) {
-		const manifestPath = join(tempDir, ".crp", "crp.yaml");
+		const manifestPath = join(tempDir, "crp.yaml");
 		writeFileSync(manifestPath, content, "utf-8");
 	}
 
