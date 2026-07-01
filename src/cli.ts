@@ -6,6 +6,7 @@ import { cmdCrpCheck } from "./commands/crp-check";
 import { cmdCrpDoctor } from "./commands/crp-doctor";
 import { cmdCrpInit } from "./commands/crp-init";
 import { cmdCrpKg } from "./commands/crp-kg";
+import { cmdCrpQuality } from "./commands/crp-quality";
 import { cmdCrpSync } from "./commands/crp-sync";
 import { cmdKgSync, cmdKgValidate } from "./commands/kg";
 import { cmdSkillCreate, cmdSkillDelete, cmdSkillList } from "./commands/skill";
@@ -179,6 +180,14 @@ program
 	.description("Validate crp.yaml schema")
 	.action(() => {
 		const code = cmdValidate();
+		if (code !== 0) process.exitCode = code;
+	});
+
+program
+	.command("quality <file>")
+	.description("Score a skill file for production readiness (8 dimensions, 0-10 scale)")
+	.action((file) => {
+		const code = cmdCrpQuality(file);
 		if (code !== 0) process.exitCode = code;
 	});
 
