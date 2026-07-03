@@ -185,7 +185,9 @@ program
 
 program
 	.command("quality <file>")
-	.description("Score a skill file for production readiness (8 dimensions, 0-10 scale)")
+	.description(
+		"Score a skill file for production readiness (8 dimensions, 0-10 scale)",
+	)
 	.action((file) => {
 		const code = cmdCrpQuality(file);
 		if (code !== 0) process.exitCode = code;

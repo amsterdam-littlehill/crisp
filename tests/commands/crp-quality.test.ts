@@ -22,7 +22,9 @@ describe("crp-quality.ts", () => {
 	}
 
 	test("returns 0 for a well-structured skill file", () => {
-		const path = writeFile("good.md", `
+		const path = writeFile(
+			"good.md",
+			`
 # Skill
 
 ## Zone 1: Attention Sink
@@ -39,7 +41,8 @@ describe("crp-quality.ts", () => {
 Read \`rules.md\` and \`workflow.md\`.
 Run the test.
 Verify output.
-    `);
+    `,
+		);
 		const exitCode = cmdCrpQuality(path);
 		expect(exitCode).toBe(0);
 	});
