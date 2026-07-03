@@ -9,6 +9,7 @@ import { cmdCrpKg } from "./commands/crp-kg";
 import { cmdCrpQuality } from "./commands/crp-quality";
 import { cmdCrpSync } from "./commands/crp-sync";
 import { cmdKgSync, cmdKgValidate } from "./commands/kg";
+import { cmdLint } from "./commands/lint";
 import { cmdSkillCreate, cmdSkillDelete, cmdSkillList } from "./commands/skill";
 import { cmdStatus } from "./commands/status";
 import {
@@ -200,6 +201,11 @@ program
 	.action(
 		runAction((opts, [file]) => cmdCrpQuality(file, { json: opts.json })),
 	);
+
+program
+	.command("lint")
+	.description("Run biome check on src/ and tests/")
+	.action(runAction((opts) => cmdLint({ json: opts.json })));
 
 program.parseAsync(process.argv).catch((err) => {
 	console.error(err);
