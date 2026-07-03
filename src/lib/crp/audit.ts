@@ -1,6 +1,5 @@
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
-import { printError, printOk, printWarn } from "../cli/format";
 import { loadManifest } from "../manifest/io";
 import { analyzeReads } from "./analyzer";
 import type { Routes } from "./injection";
@@ -13,6 +12,7 @@ export interface AuditResult {
 	maxTokens: number;
 	tokenUsage: number;
 	deadCandidates: string[];
+	histogram: { name: string; freq: number }[];
 }
 
 export function runCrpAudit(projectDir: string = process.cwd()): AuditResult {
@@ -57,38 +57,6 @@ export function runCrpAudit(projectDir: string = process.cwd()): AuditResult {
 		}
 	}
 
-	// Print report
-	console.log("== CRP Audit ==");
-	console.log("");
-	console.log(
-		`L0 Injection: ${totalTokens} / ${maxTokens} tokens (${((totalTokens / maxTokens) * 100).toFixed(1)}%)`,
-	);
-	console.log("");
-	console.log("Tier distribution:");
-	printOk(`  Inline: ${inlineCount}`);
-	printWarn(`  Lazy:   ${lazyCount}`);
-	printError(`  Dead:   ${deadCount}`);
-	console.log("");
-
-	if (allFrequencies.length > 0) {
-		console.log("Frequency histogram (30 days):");
-		for (const freq of allFrequencies) {
-			const bar = "█".repeat(Math.round(freq.freq * 20));
-			console.log(
-				`  ${freq.name.padEnd(20)} ${bar} ${(freq.freq * 100).toFixed(0)}%`,
-			);
-		}
-		console.log("");
-	}
-
-	if (deadCandidates.length > 0) {
-		printWarn("Dead candidates (0 reads in 14 days):");
-		for (const name of deadCandidates) {
-			printWarn(`  - ${name}`);
-		}
-		console.log("");
-	}
-
 	return {
 		inlineCount,
 		lazyCount,
@@ -97,5 +65,6 @@ export function runCrpAudit(projectDir: string = process.cwd()): AuditResult {
 		maxTokens,
 		tokenUsage: totalTokens / maxTokens,
 		deadCandidates,
+		histogram: allFrequencies.map((f) => ({ name: f.name, freq: f.freq })),
 	};
 }

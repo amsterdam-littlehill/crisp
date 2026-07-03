@@ -23,6 +23,22 @@ const program = new Command();
 
 program.option("--json", "Output results as JSON");
 
+// commander v13 does not pass program-level --json into subcommand action options;
+// read it explicitly. Wraps actions to inject the flag + handle exit code.
+function readJsonFlag(): boolean {
+	return program.opts().json === true;
+}
+function runAction(
+	fn: (
+		opts: { json: boolean } & Record<string, unknown>,
+	) => number | Promise<number>,
+) {
+	return async (actionOpts: Record<string, unknown>) => {
+		const code = await fn({ ...actionOpts, json: readJsonFlag() });
+		if (code !== 0) process.exitCode = code;
+	};
+}
+
 program
 	.name("crp")
 	.description("Context-Router Protocol (CRP) unified CLI")
@@ -61,10 +77,7 @@ program
 program
 	.command("audit")
 	.description("Show tier distribution and dead candidates")
-	.action(() => {
-		const code = cmdCrpAudit();
-		if (code !== 0) process.exitCode = code;
-	});
+	.action(runAction((opts) => cmdCrpAudit({ json: opts.json })));
 
 program
 	.command("doctor")
