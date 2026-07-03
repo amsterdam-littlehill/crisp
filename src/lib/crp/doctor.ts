@@ -29,13 +29,19 @@ export async function runDoctorChecks(
 	const crpDir = join(projectDir, ".crp");
 	let crpWritable = false;
 	if (existsSync(crpDir)) {
+		const testFile = join(crpDir, ".doctor-write-test");
 		try {
-			const testFile = join(crpDir, ".doctor-write-test");
 			writeFileSync(testFile, "test", "utf-8");
-			unlinkSync(testFile);
-			crpWritable = true;
+			crpWritable = true; // write success ⇒ writable
 		} catch {
 			crpWritable = false;
+		}
+		// Cleanup is best-effort: on Windows, AV/indexers can briefly lock the file
+		// so unlinkSync throws — that must NOT flip the writability verdict.
+		try {
+			unlinkSync(testFile);
+		} catch {
+			// best-effort
 		}
 	}
 	checks.push({
