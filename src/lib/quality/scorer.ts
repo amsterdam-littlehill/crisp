@@ -42,8 +42,7 @@ const LABEL_PATTERN =
 const CHECKLIST_PATTERN = /-\s*\[\s*[ x]\s*\]/;
 const PLACEHOLDER_PATTERN = /\{\{[A-Z_]+\}\}|<!--\s*FILL:/g;
 const CROSS_REF_PATTERN = /`[^`]+\.(md|mdc|py|sh)`/g;
-const AMBIGUOUS_PRONOUN_PATTERN =
-	/\b(it|this|that|them)\b/gim;
+const AMBIGUOUS_PRONOUN_PATTERN = /\b(it|this|that|them)\b/gim;
 const SENTENCE_SPLIT_PATTERN = /[.!?\n]+/;
 
 const QUANTIFIED_PATTERNS: RegExp[] = [

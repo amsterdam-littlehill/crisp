@@ -144,6 +144,8 @@ The main entrypoint is `src/cli.ts`. Current command groups include:
 | `doctor` | Diagnose environment and hook status |
 | `telemetry` | Start, stop, inspect, or report telemetry |
 | `validate` | Validate crp.yaml schema |
+| `status` | Show project status summary |
+| `quality <file>` | Score a skill file for production readiness (8 dimensions) |
 
 For detailed flags, use `bun run src/cli.ts <command> --help`.
 
@@ -158,14 +160,14 @@ These TypeScript modules implement the current toolkit surface:
 | `src/commands/crp-sync.ts` | Telemetry analysis and routes regeneration |
 | `src/commands/crp-check.ts` | Injection token budget verification |
 | `src/commands/crp-audit.ts` | Tier distribution and dead candidate detection |
-| `src/commands/crp-kg.ts` | Knowledge graph query and indexing |
+| `src/commands/crp-kg.ts` | kg query action (KG topic lookup) |
 | `src/commands/crp-doctor.ts` | Environment and hook status diagnosis |
 | `src/commands/skill.ts` | Skill creation, deletion, and listing |
-| `src/commands/kg.ts` | Knowledge graph sync and validation |
+| `src/commands/kg.ts` | kg sync / kg validate actions |
 | `src/commands/telemetry.ts` | Telemetry lifecycle and reporting |
 | `src/commands/validate.ts` | crp.yaml schema validation |
 | `src/lib/manifest/` | Manifest I/O, validation, and frontmatter extraction |
-| `src/lib/crp/` | v3 core: routing, injection, audit, migration, hooks |
+| `src/lib/crp/` | v3 core: routing, injection, audit, hooks |
 | `src/lib/kg/` | Knowledge graph extraction, validation, and generation |
 | `src/lib/telemetry/` | Telemetry hooks, logging, and reporting |
 

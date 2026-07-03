@@ -82,7 +82,7 @@ export function cmdCrpSync(options: SyncOptions = {}): number {
 		? frequencies.filter((f) => f.source === "user").length
 		: 0;
 
-	// TODO: Load KG topics from kg/index.json (Day 7)
+	// ponytail: KG topics in sync deferred; see kg query
 	const kgTopics: string[] = [];
 
 	// Generate routes

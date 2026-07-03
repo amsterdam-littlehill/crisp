@@ -189,9 +189,13 @@ function scanAllSkillDirs(): DiscoveredSkill[] {
 	return found;
 }
 
-export function cmdSkillList(): number {
+export function cmdSkillList(options: { json?: boolean } = {}): number {
 	const manifest = loadManifest("crp.yaml");
 	if (!manifest.project) {
+		if (options.json) {
+			console.log(JSON.stringify({ skills: [], total: 0 }, null, 2));
+			return 0;
+		}
 		printError(
 			"No crp.yaml found",
 			"Cannot manage skills",
@@ -209,6 +213,20 @@ export function cmdSkillList(): number {
 	const allNames = new Set<string>();
 	for (const name of registeredSkills.keys()) allNames.add(name);
 	for (const s of dirSkills) allNames.add(s.name);
+
+	if (options.json) {
+		const skills = [...allNames].sort().map((name) => {
+			const dirSkill = dirSkills.find((s) => s.name === name);
+			const desc = registeredSkills.get(name) || dirSkill?.description || "";
+			return {
+				name,
+				level: name === manifest.default_skill ? "default" : "member",
+				description: desc,
+			};
+		});
+		console.log(JSON.stringify({ skills, total: skills.length }, null, 2));
+		return 0;
+	}
 
 	if (allNames.size === 0) {
 		console.log("No skills found in any source directory.");

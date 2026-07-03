@@ -2,8 +2,8 @@
 set -euo pipefail
 
 # Context-Router Protocol (CRP) Installer
-# Thin wrapper around bun run src/cli.ts init
-# Usage: bash install.sh --skill <name> [--project <project-name>] [--shadow] [--dry-run]
+# Thin wrapper around `crp init`
+# Usage: bash install.sh [--project <project-name>] [--description <text>] [--dry-run]
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 

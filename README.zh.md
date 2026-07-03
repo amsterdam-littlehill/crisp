@@ -142,9 +142,10 @@ bun test
 | `audit` | 展示层级分布与 dead candidate |
 | `kg` | 同步或校验 CRP 知识图谱 |
 | `doctor` | 诊断环境与 hook 状态 |
-| `migrate` | 将旧版 v1 项目迁移至 v3 |
 | `telemetry` | 启动、停止、查看或报告遥测 |
 | `validate` | 运行仓库级校验 |
+| `status` | 显示项目状态摘要 |
+| `quality <file>` | 对 skill 文件进行生产就绪度评分（8 个维度） |
 
 如需详细参数，可运行 `bun run src/cli.ts <command> --help`。
 
@@ -159,11 +160,10 @@ bun test
 | `src/commands/crp-sync.ts` | Telemetry 分析与 routes 重新生成 |
 | `src/commands/crp-check.ts` | Injection token 预算校验 |
 | `src/commands/crp-audit.ts` | 层级分布与 dead candidate 检测 |
-| `src/commands/crp-kg.ts` | 知识图谱查询与索引 |
+| `src/commands/crp-kg.ts` | kg query 动作（KG 主题查询） |
 | `src/commands/crp-doctor.ts` | 环境与 hook 状态诊断 |
-| `src/commands/crp-migrate.ts` | 旧版 v1 到 v3 迁移 |
 | `src/commands/skill.ts` | Skill 创建、删除与列出 |
-| `src/commands/kg.ts` | 知识图谱同步与校验 |
+| `src/commands/kg.ts` | kg sync / kg validate 动作 |
 | `src/commands/telemetry.ts` | 遥测生命周期与报告 |
 | `src/commands/validate.ts` | crp.yaml 模式校验 |
 | `src/lib/manifest/` | Manifest I/O、校验与 frontmatter 提取 |

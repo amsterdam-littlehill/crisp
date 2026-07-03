@@ -1,9 +1,19 @@
 import { printError, printOk } from "../lib/cli/format";
 import { loadManifest, validateManifest } from "../lib/manifest/io";
 
-export function cmdValidate(): number {
+export function cmdValidate(options: { json?: boolean } = {}): number {
 	const manifest = loadManifest("crp.yaml");
 	if (!manifest.project) {
+		if (options.json) {
+			console.log(
+				JSON.stringify(
+					{ valid: false, errors: ["No crp.yaml found"] },
+					null,
+					2,
+				),
+			);
+			return 1;
+		}
 		printError(
 			"No crp.yaml found",
 			"Cannot validate project structure",
@@ -13,6 +23,14 @@ export function cmdValidate(): number {
 	}
 
 	const errors = validateManifest(manifest);
+
+	if (options.json) {
+		console.log(
+			JSON.stringify({ valid: errors.length === 0, errors }, null, 2),
+		);
+		return errors.length === 0 ? 0 : 1;
+	}
+
 	if (errors.length > 0) {
 		for (const err of errors) {
 			printError(

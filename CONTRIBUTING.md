@@ -20,10 +20,11 @@ git checkout -b feat/your-feature-name
 Make your changes, then run the validation suite locally:
 
 ```bash
-# Install a test skill and verify structure
-bun run src/cli.ts init --skill test-skill --project test
-bun run src/cli.ts check --drifts
-bun run src/cli.ts audit --report
+# Initialize a project and create a skill to verify structure
+bun run src/cli.ts init --project test
+bun run src/cli.ts skill create test-skill
+bun run src/cli.ts check
+bun run src/cli.ts audit
 
 # Run self-checks
 bash templates/skill/scripts/smoke-test.sh test-skill
@@ -54,7 +55,6 @@ test: add manifest validation cases
 - Push to your fork and open a PR against `master`
 - PRs require **1 approving review** before merge
 - Ensure CI checks pass
-- Update `benchmark-report.json` if your changes affect file sizes or structure
 
 ## Code Style
 
