@@ -217,11 +217,22 @@ export function cmdSkillList(options: { json?: boolean } = {}): number {
 	if (options.json) {
 		const skills = [...allNames].sort().map((name) => {
 			const dirSkill = dirSkills.find((s) => s.name === name);
+			const isRegistered = registeredSkills.has(name);
 			const desc = registeredSkills.get(name) || dirSkill?.description || "";
+			// Parity with human columns: Source + Registered. Source mirrors the
+			// human fallback (registered-only skills show "project"); null only
+			// when a skill is neither on disk nor registered (should not happen).
+			const source: "project" | "user" | null = dirSkill
+				? dirSkill.source
+				: isRegistered
+					? "project"
+					: null;
 			return {
 				name,
 				level: name === manifest.default_skill ? "default" : "member",
 				description: desc,
+				source,
+				registered: isRegistered,
 			};
 		});
 		console.log(JSON.stringify({ skills, total: skills.length }, null, 2));
