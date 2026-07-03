@@ -66,7 +66,9 @@ describe("ArtifactTrail", () => {
 		expect(dict.current_round).toBe(1);
 		expect(dict.artifact_count).toBe(1);
 		expect(Array.isArray(dict.artifacts)).toBe(true);
-		expect((dict.artifacts as any[])[0].type).toBe("note");
+		expect(
+			(dict.artifacts as Array<Record<string, unknown>>)[0].type as string,
+		).toBe("note");
 	});
 
 	test("artifact ids increment sequentially", () => {

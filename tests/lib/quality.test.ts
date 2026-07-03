@@ -2,6 +2,7 @@ import { describe, expect, test } from "bun:test";
 import {
 	computeQualityScore,
 	isProductionReady,
+	type ScoreDimension,
 } from "../../src/lib/quality/scorer";
 
 describe("computeQualityScore", () => {
@@ -59,15 +60,23 @@ Verify output.
 
 describe("isProductionReady", () => {
 	test("returns true for high overall score", () => {
-		expect(isProductionReady({ overall: 8.0 } as any)).toBe(true);
+		expect(
+			isProductionReady({ overall: 8.0 } as unknown as ScoreDimension),
+		).toBe(true);
 	});
 
 	test("returns false for low overall score", () => {
-		expect(isProductionReady({ overall: 5.0 } as any)).toBe(false);
+		expect(
+			isProductionReady({ overall: 5.0 } as unknown as ScoreDimension),
+		).toBe(false);
 	});
 
 	test("boundary at 7.0", () => {
-		expect(isProductionReady({ overall: 7.0 } as any)).toBe(true);
-		expect(isProductionReady({ overall: 6.99 } as any)).toBe(false);
+		expect(
+			isProductionReady({ overall: 7.0 } as unknown as ScoreDimension),
+		).toBe(true);
+		expect(
+			isProductionReady({ overall: 6.99 } as unknown as ScoreDimension),
+		).toBe(false);
 	});
 });
