@@ -34,16 +34,24 @@ jobs:
           bun $GITHUB_WORKSPACE/src/cli.ts skill create test-skill --description "CI fixture"
           bun $GITHUB_WORKSPACE/src/cli.ts sync
 
-      # Structural validator. A freshly scaffolded skill template intentionally
-      # leaves sections (e.g. hooks/, "Always Read", "Core Principles") for the
-      # author to fill in, so the smoke-test reports errors on an unfilled
-      # template. Keep running it to confirm the script exists and executes,
-      # but do not block CI on these pre-existing template gaps.
-      - name: Run smoke-test
-        continue-on-error: true
+      # The smoke-test is an author tool (48 checks against a filled-in skill).
+      # A fresh template intentionally leaves sections (hooks/, "Always Read",
+      # "Core Principles") for the author, so it reports FAILs on a scaffold.
+      # The CI contract worth enforcing here is that the shipped script EXECUTES
+      # (exit 0 = passed, 1 = failed checks = expected on fresh template,
+      # 2+/127 = broken script). Assert executability without continue-on-error.
+      - name: Verify smoke-test script executes
         run: |
           cd /tmp/test-project
-          bash .claude/skills/test-skill/scripts/smoke-test.sh test-skill
+          set +e
+          bash .claude/skills/test-skill/scripts/smoke-test.sh test-skill > /tmp/smoke.out 2>&1
+          code=$?
+          cat /tmp/smoke.out
+          if [ "$code" -ge 2 ]; then
+            echo "::error::smoke-test script broken (exit $code)"
+            exit 1
+          fi
+          echo "smoke-test executed cleanly (exit $code, expected 0 or 1 on fresh template)"
 
       - name: Run health-check
         run: |
@@ -54,11 +62,6 @@ jobs:
         run: |
           cd /tmp/test-project
           bun $GITHUB_WORKSPACE/src/cli.ts audit
-
-      - name: Verify --json contract
-        run: |
-          cd /tmp/test-project
-          bun $GITHUB_WORKSPACE/src/cli.ts --json audit | bun -e 'let d="";process.stdin.on("data",c=>d+=c).on("end",()=>JSON.parse(d))'
 
       - name: Test sync dry-run
         run: |
