@@ -56,7 +56,7 @@ export function cmdCrpCheck(options: CheckOptions = {}): number {
 				2,
 			),
 		);
-		return 0;
+		return injection.truncated && options.ci ? 1 : 0;
 	}
 
 	if (injection.truncated) {

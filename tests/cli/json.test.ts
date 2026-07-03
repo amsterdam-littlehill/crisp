@@ -1,5 +1,8 @@
 import { describe, expect, test } from "bun:test";
 import { spawnSync } from "node:child_process";
+import { mkdtempSync, rmSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 
 function run(args: string[]) {
 	const r = spawnSync("bun", ["run", "src/cli.ts", ...args], {
@@ -89,6 +92,29 @@ describe("crp --json contract", () => {
 		expect(parsed).toHaveProperty("bySkill");
 		expect(parsed).toHaveProperty("totalReads");
 		expect(Array.isArray(parsed.bySkill)).toBe(true);
+	});
+
+	test("telemetry report --json exits 1 with error JSON outside a CRP project", () => {
+		// Mirrors the human path's "No crp.yaml found" guard (regression guard).
+		const tmp = mkdtempSync(join(tmpdir(), "crp-json-noproj-"));
+		try {
+			const r = spawnSync(
+				"bun",
+				[
+					"run",
+					join(process.cwd(), "src", "cli.ts"),
+					"--json",
+					"telemetry",
+					"report",
+				],
+				{ cwd: tmp, encoding: "utf-8" },
+			);
+			expect(r.status).toBe(1);
+			const parsed = JSON.parse(r.stdout ?? "");
+			expect(parsed).toHaveProperty("error");
+		} finally {
+			rmSync(tmp, { recursive: true, force: true });
+		}
 	});
 
 	test("kg query --json emits valid JSON", () => {

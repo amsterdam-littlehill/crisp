@@ -14,16 +14,15 @@ export interface LintSummary {
 // consumers running `crp lint` in their own projects must have biome available.
 // Degrades gracefully (exit 2 + message) when biome is missing instead of crashing.
 export function cmdLint(options: LintOptions = {}): number {
-	let spawned: { stdout: string; status: number | null };
-	try {
-		spawned = spawnSync(
-			"bunx",
-			["biome", "check", "src/", "tests/", "--reporter=json"],
-			{ encoding: "utf-8" },
-		);
-	} catch {
+	// spawnSync does not throw on a missing binary — it returns { error: <ENOENT> }.
+	const spawned = spawnSync(
+		"bunx",
+		["biome", "check", "src/", "tests/", "--reporter=json"],
+		{ encoding: "utf-8" },
+	);
+	if (spawned.error) {
 		console.error(
-			"crp lint: failed to spawn biome. Is @biomejs/biome installed?",
+			"crp lint: biome not available. Is @biomejs/biome installed?",
 		);
 		return 2;
 	}
@@ -38,7 +37,9 @@ export function cmdLint(options: LintOptions = {}): number {
 	};
 	try {
 		// biome on Windows emits path strings with raw backslashes (e.g. "src\commands\lint.ts"),
-		// which is invalid JSON (a lone backslash is not a valid escape). Normalize to "/".
+		// which is invalid JSON (a lone backslash is not a valid escape). Normalize every backslash
+		// to "/" — safe because we only consume paths and counts; any backslash in a diagnostic
+		// description is not surfaced, so corrupting it to "/" is harmless.
 		parsed = JSON.parse(spawned.stdout.replace(/\\/g, "/"));
 	} catch {
 		console.error("crp lint: could not parse biome JSON output.");

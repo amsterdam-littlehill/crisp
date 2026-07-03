@@ -117,8 +117,9 @@ export interface ReportSummary {
 	totalReads: number;
 }
 
-export function buildReportSummary(): ReportSummary {
+export function buildReportSummary(): ReportSummary | null {
 	const manifest = loadManifest("crp.yaml");
+	if (!manifest.project) return null;
 	const windowDays = manifest.crp?.telemetry?.window_days ?? 30;
 	const readEvents = loadReportReadEvents();
 

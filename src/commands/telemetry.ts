@@ -31,6 +31,10 @@ export function cmdTelemetryReport(options: {
 }): number {
 	if (options.json) {
 		const summary = buildReportSummary();
+		if (summary === null) {
+			console.log(JSON.stringify({ error: "No crp.yaml found" }, null, 2));
+			return 1;
+		}
 		console.log(JSON.stringify(summary, null, 2));
 		return 0;
 	}
