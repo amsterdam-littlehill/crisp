@@ -77,6 +77,7 @@ program
 			cmdCrpSync({
 				check: Boolean(opts.check),
 				includeUser: Boolean(opts.includeUser),
+				json: opts.json,
 			}),
 		),
 	);

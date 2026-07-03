@@ -115,9 +115,19 @@ export interface ReportSummary {
 	windowDays: number;
 	bySkill: Array<{ name: string; reads: number; tokens: number }>;
 	totalReads: number;
+	// Parity fields with runReport's human output:
+	totalTokens: number;
+	topFiles: Array<{ file: string; loads: number }>;
+	skipEvents: {
+		total: number;
+		roundDedup: number;
+		notRelevant: number;
+	} | null;
 }
 
-export function buildReportSummary(): ReportSummary | null {
+export function buildReportSummary(
+	taskType?: string | null,
+): ReportSummary | null {
 	const manifest = loadManifest("crp.yaml");
 	if (!manifest.project) return null;
 	const windowDays = manifest.crp?.telemetry?.window_days ?? 30;
@@ -137,10 +147,48 @@ export function buildReportSummary(): ReportSummary | null {
 		.map(([name, v]) => ({ name, reads: v.reads, tokens: v.tokens }))
 		.sort((a, b) => b.reads - a.reads);
 
+	// Mirror runReport: sum of loaded tokens across all READ events.
+	const totalTokens = readEvents.reduce(
+		(sum, e) => sum + ((e.tokens as number) || 0),
+		0,
+	);
+
+	// Mirror runReport: top files by load count, bounded to 10.
+	const fileCounts: Record<string, number> = {};
+	for (const e of readEvents) {
+		const f = (e.file as string) || "unknown";
+		fileCounts[f] = (fileCounts[f] || 0) + 1;
+	}
+	const topFiles = Object.entries(fileCounts)
+		.sort(([, a], [, b]) => b - a)
+		.slice(0, 10)
+		.map(([file, loads]) => ({ file, loads }));
+
+	// Mirror runReport: derived SKIP events when KG + session state exist.
+	let skipEvents: ReportSummary["skipEvents"] = null;
+	const kgPath = join(".crp", "kg", ".crp-kg.json");
+	const sessionPath = join(".crp", "session", "state.json");
+	if (existsSync(kgPath) && existsSync(sessionPath)) {
+		const events = deriveSkipEvents(kgPath, sessionPath, taskType);
+		if (events.length > 0) {
+			const roundDedup = events.filter(
+				(e) => e.skip_reason === "round_dedup",
+			).length;
+			skipEvents = {
+				total: events.length,
+				roundDedup,
+				notRelevant: events.length - roundDedup,
+			};
+		}
+	}
+
 	return {
 		windowDays,
 		bySkill,
 		totalReads: readEvents.length,
+		totalTokens,
+		topFiles,
+		skipEvents,
 	};
 }
 

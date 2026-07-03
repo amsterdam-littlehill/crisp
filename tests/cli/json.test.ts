@@ -85,6 +85,22 @@ describe("crp --json contract", () => {
 		expect(Array.isArray(parsed.skills)).toBe(true);
 	});
 
+	test("skill list --json includes source and registered parity fields", () => {
+		const { stdout } = run(["--json", "skill", "list"]);
+		const parsed = JSON.parse(stdout);
+		expect(parsed).toHaveProperty("skills");
+		expect(Array.isArray(parsed.skills)).toBe(true);
+		// Parity with human columns: Source, Registered (plus Default/Description)
+		for (const s of parsed.skills) {
+			expect(s).toHaveProperty("source");
+			expect([null, "project", "user"]).toContain(s.source);
+			expect(s).toHaveProperty("registered");
+			expect(typeof s.registered).toBe("boolean");
+			expect(s).toHaveProperty("level");
+			expect(s).toHaveProperty("description");
+		}
+	});
+
 	test("telemetry report --json emits valid JSON", () => {
 		const { stdout } = run(["--json", "telemetry", "report"]);
 		const parsed = JSON.parse(stdout);
@@ -92,6 +108,21 @@ describe("crp --json contract", () => {
 		expect(parsed).toHaveProperty("bySkill");
 		expect(parsed).toHaveProperty("totalReads");
 		expect(Array.isArray(parsed.bySkill)).toBe(true);
+	});
+
+	test("telemetry report --json includes totalTokens and topFiles parity fields", () => {
+		const { stdout } = run(["--json", "telemetry", "report"]);
+		const parsed = JSON.parse(stdout);
+		// Parity with runReport: total tokens loaded + top files by load count
+		expect(parsed).toHaveProperty("totalTokens");
+		expect(typeof parsed.totalTokens).toBe("number");
+		expect(parsed).toHaveProperty("topFiles");
+		expect(Array.isArray(parsed.topFiles)).toBe(true);
+		for (const f of parsed.topFiles) {
+			expect(f).toHaveProperty("file");
+			expect(f).toHaveProperty("loads");
+			expect(typeof f.loads).toBe("number");
+		}
 	});
 
 	test("telemetry report --json exits 1 with error JSON outside a CRP project", () => {
@@ -121,5 +152,46 @@ describe("crp --json contract", () => {
 		const { stdout } = run(["--json", "kg", "query", "backend"]);
 		const parsed = JSON.parse(stdout);
 		expect(parsed).toHaveProperty("topic");
+	});
+
+	test("sync --check --json emits valid route preview with changes field", () => {
+		// Run in repo root: sync --check reads .crp/routes.json which exists here.
+		const { stdout } = run(["--json", "sync", "--check"]);
+		const parsed = JSON.parse(stdout);
+		// Owner contract: structured route diff/preview instead of human text.
+		expect(parsed).toHaveProperty("changes");
+		expect(typeof parsed.changes).toBe("boolean");
+		expect(parsed).toHaveProperty("skills");
+		expect(Array.isArray(parsed.skills)).toBe(true);
+		// Counts mirror the human --check output
+		expect(parsed).toHaveProperty("inline");
+		expect(typeof parsed.inline).toBe("number");
+		expect(parsed).toHaveProperty("lazy");
+		expect(typeof parsed.lazy).toBe("number");
+		expect(parsed).toHaveProperty("dead");
+		expect(typeof parsed.dead).toBe("number");
+		expect(parsed).toHaveProperty("added");
+		expect(Array.isArray(parsed.added)).toBe(true);
+		expect(parsed).toHaveProperty("removed");
+		expect(Array.isArray(parsed.removed)).toBe(true);
+	});
+
+	test("sync --check --json emits diff arrays (added/removed)", () => {
+		const { stdout } = run(["--json", "sync", "--check"]);
+		const parsed = JSON.parse(stdout);
+		// In repo root, routes.json has skills: [] and no project skills on disk,
+		// so the diff should be empty but well-typed.
+		expect(parsed.added.every((s: unknown) => typeof s === "string")).toBe(
+			true,
+		);
+		expect(parsed.removed.every((s: unknown) => typeof s === "string")).toBe(
+			true,
+		);
+		// skills entries carry name + strategy (the route preview)
+		for (const s of parsed.skills) {
+			expect(s).toHaveProperty("name");
+			expect(s).toHaveProperty("strategy");
+			expect(["inline", "lazy", "dead"]).toContain(s.strategy);
+		}
 	});
 });

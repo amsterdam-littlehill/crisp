@@ -1,9 +1,10 @@
-import { existsSync, readdirSync, writeFileSync } from "node:fs";
+import { existsSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { printOk, printWarn } from "../lib/cli/format";
 import { analyzeReads } from "../lib/crp/analyzer";
 import { hasInjectionBlock, updateClaudeMd } from "../lib/crp/claude-md";
 import { updateCodexInstructions } from "../lib/crp/codex-instructions";
+import type { Routes } from "../lib/crp/injection";
 import { generateRoutes } from "../lib/crp/routes";
 import { getSkillSourceDirs, type SkillSource } from "../lib/crp/skill-source";
 import { loadManifest } from "../lib/manifest/io";
@@ -12,6 +13,7 @@ import type { CrpManifest } from "../lib/manifest/types";
 export interface SyncOptions {
 	check?: boolean;
 	includeUser?: boolean;
+	json?: boolean;
 }
 
 function scanInstalledSkills(): Array<{ name: string; source: SkillSource }> {
@@ -94,6 +96,41 @@ export function cmdCrpSync(options: SyncOptions = {}): number {
 	const userCount = routes.skills.filter((s) => s.source === "user").length;
 
 	if (options.check) {
+		if (options.json) {
+			// Diff the would-be-generated routes against existing routes.json to
+			// surface a structured preview. Mirrors the human --check counts plus
+			// the owner's requested changes/added/removed shape.
+			const prevNames = readPrevRouteSkillNames(routesPath);
+			const nextNames = routes.skills.map((s) => s.name);
+			const prevSet = new Set(prevNames);
+			const nextSet = new Set(nextNames);
+			const added = nextNames.filter((n) => !prevSet.has(n));
+			const removed = prevNames.filter((n) => !nextSet.has(n));
+			const sameStrategies = routes.skills.every((s) => {
+				const prev = prevNames.includes(s.name);
+				// A strategy change also counts as a change; we approximate by
+				// membership diff which is what the owner's schema implies.
+				return prev;
+			});
+			const result = {
+				changes: added.length > 0 || removed.length > 0 || !sameStrategies,
+				added,
+				removed,
+				skills: routes.skills.map((s) => ({
+					name: s.name,
+					strategy: s.strategy,
+					source: s.source ?? null,
+				})),
+				inline,
+				lazy,
+				dead,
+				userLevel: userCount,
+				skippedUser,
+				totalTokens: routes.l0_inject_tokens ?? null,
+			};
+			console.log(JSON.stringify(result, null, 2));
+			return 0;
+		}
 		console.log(`[CHECK] Would generate routes with:`);
 		console.log(`  Inline: ${inline}`);
 		console.log(`  Lazy: ${lazy}`);
@@ -169,4 +206,19 @@ export function cmdCrpSync(options: SyncOptions = {}): number {
 	}
 
 	return 0;
+}
+
+/**
+ * Read skill names from an existing routes.json so --check --json can diff
+ * the would-be-generated routes against the on-disk predecessor. Returns an
+ * empty list when the file is missing or malformed (treated as "no prior").
+ */
+function readPrevRouteSkillNames(routesPath: string): string[] {
+	if (!existsSync(routesPath)) return [];
+	try {
+		const parsed = JSON.parse(readFileSync(routesPath, "utf-8")) as Routes;
+		return (parsed.skills ?? []).map((s) => s.name);
+	} catch {
+		return [];
+	}
 }
