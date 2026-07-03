@@ -27,4 +27,19 @@ describe("crp --json contract", () => {
 		expect(() => JSON.parse(stdout)).toThrow();
 		expect(stdout).toContain("CRP Audit");
 	});
+
+	test("status --json emits valid JSON", () => {
+		const { stdout } = run(["--json", "status"]);
+		const parsed = JSON.parse(stdout);
+		expect(parsed).toHaveProperty("project");
+		expect(parsed).toHaveProperty("manifest");
+		expect(parsed).toHaveProperty("skills");
+		expect(parsed).toHaveProperty("tokenBudget");
+	});
+
+	test("status without --json emits human text", () => {
+		const { stdout } = run(["status"]);
+		expect(() => JSON.parse(stdout)).toThrow();
+		expect(stdout).toContain("CRP Status");
+	});
 });

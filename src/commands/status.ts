@@ -35,70 +35,52 @@ function getLastSyncTime(path: string): string | null {
 	}
 }
 
-export function cmdStatus(): number {
+export function cmdStatus(options: { json?: boolean } = {}): number {
 	const projectDir = process.cwd();
 	const manifestPath = join(projectDir, "crp.yaml");
 	const crpDir = join(projectDir, ".crp");
 	const routesPath = join(crpDir, "routes.json");
 	const telemetryPath = join(crpDir, "telemetry", "reads.jsonl");
 
-	console.log("== CRP Status ==\n");
-
-	// Project name from manifest
+	// Project name from manifest (loadManifest returns {} when missing)
 	const manifest = loadManifest(manifestPath);
 	const projectName = manifest.project?.name || "(unknown)";
-	console.log(`Project: ${projectName}`);
 
 	// Manifest status
-	if (existsSync(manifestPath)) {
+	const manifestExists = existsSync(manifestPath);
+	let manifestValid = false;
+	if (manifestExists) {
 		try {
 			loadManifest(manifestPath);
-			printOk(`Manifest: crp.yaml (exists, valid)`);
+			manifestValid = true;
 		} catch {
-			printWarn(`Manifest: crp.yaml (exists, invalid)`);
+			manifestValid = false;
 		}
-	} else {
-		printError(`Manifest: crp.yaml (not found)`);
 	}
 
 	// Routes status
-	if (existsSync(routesPath)) {
-		const lastSync = getLastSyncTime(routesPath);
-		if (lastSync) {
-			printOk(`Routes: .crp/routes.json (last sync: ${lastSync})`);
-		} else {
-			printOk(`Routes: .crp/routes.json (exists)`);
-		}
-	} else {
-		printWarn(`Routes: .crp/routes.json (not found)`);
-	}
+	const routesExists = existsSync(routesPath);
+	const lastSync = routesExists ? getLastSyncTime(routesPath) : null;
 
 	// Telemetry status
-	if (existsSync(telemetryPath)) {
+	const telemetryExists = existsSync(telemetryPath);
+	let telemetrySize: string | null = null;
+	let telemetryAge: number | null = null;
+	if (telemetryExists) {
 		const stats = statSync(telemetryPath);
-		const size = formatBytes(stats.size);
-		const age = getFileAgeDays(telemetryPath);
-		const ageStr = age !== null ? `${age} days` : "unknown age";
-		printOk(`Telemetry: .crp/telemetry/reads.jsonl (${size}, ${ageStr})`);
-	} else {
-		printWarn(`Telemetry: .crp/telemetry/reads.jsonl (not found)`);
+		telemetrySize = formatBytes(stats.size);
+		telemetryAge = getFileAgeDays(telemetryPath);
 	}
 
 	// Hooks status
 	const adapter = getDefaultAdapter();
 	const hookStatus = adapter.checkStatus(projectDir);
-	const postReadIcon = hookStatus.postReadActive ? green("✓") : red("✗");
-	console.log(`Hooks: PostToolUse ${postReadIcon} (${adapter.name})`);
 
 	// CLAUDE.md status
 	const claudeMdContent = readClaudeMd(projectDir);
-	if (claudeMdContent === null) {
-		printWarn("CLAUDE.md: not found");
-	} else if (hasInjectionBlock(claudeMdContent)) {
-		printOk("CLAUDE.md: CRP injection block present");
-	} else {
-		printWarn("CLAUDE.md: exists but no CRP injection block");
-	}
+	const claudeMdExists = claudeMdContent !== null;
+	const claudeMdHasInjection =
+		claudeMdContent !== null && hasInjectionBlock(claudeMdContent);
 
 	// Skills count
 	const skillDirs = getSkillSourceDirs();
@@ -118,9 +100,6 @@ export function cmdStatus(): number {
 		}
 	}
 	const totalSkills = projectSkills + userSkills;
-	console.log(
-		`Skills: ${totalSkills} registered, ${projectSkills} project-level, ${userSkills} user-level`,
-	);
 
 	// Token budget
 	let totalTokens = 0;
@@ -135,6 +114,83 @@ export function cmdStatus(): number {
 	}
 	const percentage =
 		maxTokens > 0 ? Math.round((totalTokens / maxTokens) * 100) : 0;
+
+	// Structured result (computed once, used for both branches)
+	const result = {
+		project: projectName,
+		manifest: { exists: manifestExists, valid: manifestValid },
+		routes: { exists: routesExists, lastSync },
+		telemetry: {
+			exists: telemetryExists,
+			size: telemetrySize,
+			ageDays: telemetryAge,
+		},
+		hooks: { postReadActive: hookStatus.postReadActive, adapter: adapter.name },
+		claudeMd: { exists: claudeMdExists, hasInjection: claudeMdHasInjection },
+		skills: { total: totalSkills, project: projectSkills, user: userSkills },
+		tokenBudget: { used: totalTokens, max: maxTokens, percent: percentage },
+	};
+
+	if (options.json) {
+		console.log(JSON.stringify(result, null, 2));
+		return 0;
+	}
+
+	console.log("== CRP Status ==\n");
+	console.log(`Project: ${projectName}`);
+
+	// Manifest status
+	if (manifestExists) {
+		if (manifestValid) {
+			printOk(`Manifest: crp.yaml (exists, valid)`);
+		} else {
+			printWarn(`Manifest: crp.yaml (exists, invalid)`);
+		}
+	} else {
+		printError(`Manifest: crp.yaml (not found)`);
+	}
+
+	// Routes status
+	if (routesExists) {
+		if (lastSync) {
+			printOk(`Routes: .crp/routes.json (last sync: ${lastSync})`);
+		} else {
+			printOk(`Routes: .crp/routes.json (exists)`);
+		}
+	} else {
+		printWarn(`Routes: .crp/routes.json (not found)`);
+	}
+
+	// Telemetry status
+	if (telemetryExists) {
+		const ageStr =
+			telemetryAge !== null ? `${telemetryAge} days` : "unknown age";
+		printOk(
+			`Telemetry: .crp/telemetry/reads.jsonl (${telemetrySize}, ${ageStr})`,
+		);
+	} else {
+		printWarn(`Telemetry: .crp/telemetry/reads.jsonl (not found)`);
+	}
+
+	// Hooks status
+	const postReadIcon = hookStatus.postReadActive ? green("✓") : red("✗");
+	console.log(`Hooks: PostToolUse ${postReadIcon} (${adapter.name})`);
+
+	// CLAUDE.md status
+	if (!claudeMdExists) {
+		printWarn("CLAUDE.md: not found");
+	} else if (claudeMdHasInjection) {
+		printOk("CLAUDE.md: CRP injection block present");
+	} else {
+		printWarn("CLAUDE.md: exists but no CRP injection block");
+	}
+
+	// Skills count
+	console.log(
+		`Skills: ${totalSkills} registered, ${projectSkills} project-level, ${userSkills} user-level`,
+	);
+
+	// Token budget
 	const budgetColor =
 		percentage >= 90 ? red : percentage >= 70 ? yellow : green;
 	console.log(

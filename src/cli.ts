@@ -183,10 +183,7 @@ telemetryCmd
 program
 	.command("status")
 	.description("Show project status summary")
-	.action(() => {
-		const code = cmdStatus();
-		if (code !== 0) process.exitCode = code;
-	});
+	.action(runAction((opts) => cmdStatus({ json: opts.json })));
 
 program
 	.command("validate")
