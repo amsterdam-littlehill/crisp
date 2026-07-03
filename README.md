@@ -167,7 +167,7 @@ These TypeScript modules implement the current toolkit surface:
 | `src/commands/telemetry.ts` | Telemetry lifecycle and reporting |
 | `src/commands/validate.ts` | crp.yaml schema validation |
 | `src/lib/manifest/` | Manifest I/O, validation, and frontmatter extraction |
-| `src/lib/crp/` | v3 core: routing, injection, audit, migration, hooks |
+| `src/lib/crp/` | v3 core: routing, injection, audit, hooks |
 | `src/lib/kg/` | Knowledge graph extraction, validation, and generation |
 | `src/lib/telemetry/` | Telemetry hooks, logging, and reporting |
 

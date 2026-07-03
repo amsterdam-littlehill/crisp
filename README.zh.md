@@ -142,7 +142,6 @@ bun test
 | `audit` | 展示层级分布与 dead candidate |
 | `kg` | 同步或校验 CRP 知识图谱 |
 | `doctor` | 诊断环境与 hook 状态 |
-| `migrate` | 将旧版 v1 项目迁移至 v3 |
 | `telemetry` | 启动、停止、查看或报告遥测 |
 | `validate` | 运行仓库级校验 |
 | `status` | 显示项目状态摘要 |
@@ -163,7 +162,6 @@ bun test
 | `src/commands/crp-audit.ts` | 层级分布与 dead candidate 检测 |
 | `src/commands/crp-kg.ts` | kg query 动作（KG 主题查询） |
 | `src/commands/crp-doctor.ts` | 环境与 hook 状态诊断 |
-| `src/commands/crp-migrate.ts` | 旧版 v1 到 v3 迁移 |
 | `src/commands/skill.ts` | Skill 创建、删除与列出 |
 | `src/commands/kg.ts` | kg sync / kg validate 动作 |
 | `src/commands/telemetry.ts` | 遥测生命周期与报告 |
