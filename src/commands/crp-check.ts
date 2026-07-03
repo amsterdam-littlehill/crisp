@@ -7,6 +7,7 @@ import { loadManifest } from "../lib/manifest/io";
 
 export interface CheckOptions {
 	ci?: boolean;
+	json?: boolean;
 }
 
 export function cmdCrpCheck(options: CheckOptions = {}): number {
@@ -22,6 +23,16 @@ export function cmdCrpCheck(options: CheckOptions = {}): number {
 	try {
 		routes = JSON.parse(readFileSync(routesPath, "utf-8")) as Routes;
 	} catch {
+		if (options.json) {
+			console.log(
+				JSON.stringify(
+					{ error: "routes.json not found", withinBudget: false, maxTokens },
+					null,
+					2,
+				),
+			);
+			return 1;
+		}
 		printError(
 			"routes.json not found",
 			"Cannot verify injection",
@@ -31,6 +42,22 @@ export function cmdCrpCheck(options: CheckOptions = {}): number {
 	}
 
 	const injection = buildInjection(routes, maxTokens);
+
+	if (options.json) {
+		console.log(
+			JSON.stringify(
+				{
+					withinBudget: !injection.truncated,
+					maxTokens,
+					truncated: injection.truncated,
+					droppedSkills: injection.droppedSkills,
+				},
+				null,
+				2,
+			),
+		);
+		return 0;
+	}
 
 	if (injection.truncated) {
 		printWarn(

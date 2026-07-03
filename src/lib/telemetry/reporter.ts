@@ -111,6 +111,38 @@ function loadReportReadEvents(): Array<Record<string, unknown>> {
 	}
 }
 
+export interface ReportSummary {
+	windowDays: number;
+	bySkill: Array<{ name: string; reads: number; tokens: number }>;
+	totalReads: number;
+}
+
+export function buildReportSummary(): ReportSummary {
+	const manifest = loadManifest("crp.yaml");
+	const windowDays = manifest.crp?.telemetry?.window_days ?? 30;
+	const readEvents = loadReportReadEvents();
+
+	const bySkillMap = new Map<string, { reads: number; tokens: number }>();
+	for (const e of readEvents) {
+		const skill = (e.skill as string) || "unknown";
+		const tokens = (e.tokens as number) || 0;
+		const entry = bySkillMap.get(skill) || { reads: 0, tokens: 0 };
+		entry.reads += 1;
+		entry.tokens += tokens;
+		bySkillMap.set(skill, entry);
+	}
+
+	const bySkill = [...bySkillMap.entries()]
+		.map(([name, v]) => ({ name, reads: v.reads, tokens: v.tokens }))
+		.sort((a, b) => b.reads - a.reads);
+
+	return {
+		windowDays,
+		bySkill,
+		totalReads: readEvents.length,
+	};
+}
+
 export function runReport(skillName?: string | null): number {
 	const manifest = loadManifest("crp.yaml");
 	if (!manifest.project) {

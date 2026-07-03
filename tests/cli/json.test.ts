@@ -42,4 +42,58 @@ describe("crp --json contract", () => {
 		expect(() => JSON.parse(stdout)).toThrow();
 		expect(stdout).toContain("CRP Status");
 	});
+
+	test("check --json emits valid JSON", () => {
+		const { stdout } = run(["--json", "check"]);
+		const parsed = JSON.parse(stdout);
+		expect(parsed).toHaveProperty("withinBudget");
+		expect(parsed).toHaveProperty("maxTokens");
+		expect(parsed).toHaveProperty("truncated");
+		expect(parsed).toHaveProperty("droppedSkills");
+	});
+
+	test("validate --json emits valid JSON", () => {
+		const { stdout } = run(["--json", "validate"]);
+		const parsed = JSON.parse(stdout);
+		expect(parsed).toHaveProperty("valid");
+		expect(parsed).toHaveProperty("errors");
+		expect(Array.isArray(parsed.errors)).toBe(true);
+	});
+
+	test("doctor --json emits valid JSON", () => {
+		const { stdout } = run(["--json", "doctor"]);
+		const parsed = JSON.parse(stdout);
+		expect(parsed).toHaveProperty("checks");
+		expect(Array.isArray(parsed.checks)).toBe(true);
+	});
+
+	test("quality --json emits valid JSON", () => {
+		const { stdout } = run(["--json", "quality", "CLAUDE.md"]);
+		const parsed = JSON.parse(stdout);
+		expect(parsed).toHaveProperty("overall");
+		expect(parsed).toHaveProperty("production_ready");
+	});
+
+	test("skill list --json emits valid JSON", () => {
+		const { stdout } = run(["--json", "skill", "list"]);
+		const parsed = JSON.parse(stdout);
+		expect(parsed).toHaveProperty("skills");
+		expect(parsed).toHaveProperty("total");
+		expect(Array.isArray(parsed.skills)).toBe(true);
+	});
+
+	test("telemetry report --json emits valid JSON", () => {
+		const { stdout } = run(["--json", "telemetry", "report"]);
+		const parsed = JSON.parse(stdout);
+		expect(parsed).toHaveProperty("windowDays");
+		expect(parsed).toHaveProperty("bySkill");
+		expect(parsed).toHaveProperty("totalReads");
+		expect(Array.isArray(parsed.bySkill)).toBe(true);
+	});
+
+	test("kg query --json emits valid JSON", () => {
+		const { stdout } = run(["--json", "kg", "query", "backend"]);
+		const parsed = JSON.parse(stdout);
+		expect(parsed).toHaveProperty("topic");
+	});
 });

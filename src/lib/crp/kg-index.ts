@@ -128,14 +128,28 @@ function isTopicMatch(query: string, topic: string): boolean {
 	return regex.test(t);
 }
 
-export function queryKg(
+export interface KgQueryResult {
+	topic: string;
+	matched: KgChunk[];
+	truncated: boolean;
+	totalTokens: number;
+	rendered: string;
+}
+
+export function queryKgStructured(
 	topic: string,
 	maxTokens: number = 200,
 	projectDir: string = process.cwd(),
-): string {
+): KgQueryResult {
 	const index = loadKgIndex(projectDir);
 	if (!index || index.chunks.length === 0) {
-		return `No KG index found for topic: ${topic}`;
+		return {
+			topic,
+			matched: [],
+			truncated: false,
+			totalTokens: 0,
+			rendered: `No KG index found for topic: ${topic}`,
+		};
 	}
 
 	// Load maxTokens from manifest if available
@@ -157,23 +171,46 @@ export function queryKg(
 	);
 
 	if (matched.length === 0) {
-		return `No results found for topic: ${topic}`;
+		return {
+			topic,
+			matched: [],
+			truncated: false,
+			totalTokens: 0,
+			rendered: `No results found for topic: ${topic}`,
+		};
 	}
 
 	// Collect chunks until maxTokens
-	const result: string[] = [];
+	const included: KgChunk[] = [];
 	let totalTokens = 0;
 
 	for (const chunk of matched) {
 		if (totalTokens + chunk.tokens > effectiveMaxTokens) break;
-		result.push(chunk.content);
+		included.push(chunk);
 		totalTokens += chunk.tokens;
 	}
 
-	if (result.length === 0) {
+	let rendered: string;
+	if (included.length === 0) {
 		// Even the first chunk is too big, return truncated
-		return matched[0].content.slice(0, 300);
+		rendered = matched[0].content.slice(0, 300);
+	} else {
+		rendered = included.map((c) => c.content).join("\n\n");
 	}
 
-	return result.join("\n\n");
+	return {
+		topic,
+		matched,
+		truncated: included.length < matched.length,
+		totalTokens,
+		rendered,
+	};
+}
+
+export function queryKg(
+	topic: string,
+	maxTokens: number = 200,
+	projectDir: string = process.cwd(),
+): string {
+	return queryKgStructured(topic, maxTokens, projectDir).rendered;
 }

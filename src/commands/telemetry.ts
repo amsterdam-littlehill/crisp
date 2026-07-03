@@ -4,7 +4,7 @@ import {
 	injectHook,
 	removeHook,
 } from "../lib/telemetry/hooks";
-import { runReport } from "../lib/telemetry/reporter";
+import { buildReportSummary, runReport } from "../lib/telemetry/reporter";
 
 const SETTINGS_PATH = join(".claude", "settings.json");
 
@@ -25,6 +25,14 @@ export function cmdTelemetryStatus(): number {
 	return 0;
 }
 
-export function cmdTelemetryReport(options: { skill?: string | null }): number {
+export function cmdTelemetryReport(options: {
+	skill?: string | null;
+	json?: boolean;
+}): number {
+	if (options.json) {
+		const summary = buildReportSummary();
+		console.log(JSON.stringify(summary, null, 2));
+		return 0;
+	}
 	return runReport(options.skill || null);
 }

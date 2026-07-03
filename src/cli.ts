@@ -31,10 +31,16 @@ function readJsonFlag(): boolean {
 function runAction(
 	fn: (
 		opts: { json: boolean } & Record<string, unknown>,
+		positionals: string[],
 	) => number | Promise<number>,
 ) {
-	return async (actionOpts: Record<string, unknown>) => {
-		const code = await fn({ ...actionOpts, json: readJsonFlag() });
+	// commander calls action handlers as (positional1, ..., options, command).
+	// The second-to-last arg is the options object; preceding args are positionals.
+	return async (...args: unknown[]) => {
+		const optionsIdx = Math.max(args.length - 2, 0);
+		const actionOpts = (args[optionsIdx] as Record<string, unknown>) || {};
+		const positionals = args.slice(0, optionsIdx).map(String);
+		const code = await fn({ ...actionOpts, json: readJsonFlag() }, positionals);
 		if (code !== 0) process.exitCode = code;
 	};
 }
@@ -50,29 +56,37 @@ program
 	.option("--project <name>", "Project name")
 	.option("--description <text>", "Project description")
 	.option("--dry-run", "Preview only")
-	.action((options) => {
-		const code = cmdCrpInit(options);
-		if (code !== 0) process.exitCode = code;
-	});
+	.action(
+		runAction((opts) =>
+			cmdCrpInit({
+				project: opts.project as string | undefined,
+				description: opts.description as string | undefined,
+				dryRun: Boolean(opts.dryRun),
+			}),
+		),
+	);
 
 program
 	.command("sync")
 	.description("Analyze telemetry and regenerate routes.json")
 	.option("--check", "Dry-run: preview route changes")
 	.option("--include-user", "Include user-level skills in route generation")
-	.action((options) => {
-		const code = cmdCrpSync(options);
-		if (code !== 0) process.exitCode = code;
-	});
+	.action(
+		runAction((opts) =>
+			cmdCrpSync({
+				check: Boolean(opts.check),
+				includeUser: Boolean(opts.includeUser),
+			}),
+		),
+	);
 
 program
 	.command("check")
 	.description("Verify injection fits within token budget")
 	.option("--ci", "Exit 1 on truncation (for CI)")
-	.action((options) => {
-		const code = cmdCrpCheck(options);
-		if (code !== 0) process.exitCode = code;
-	});
+	.action(
+		runAction((opts) => cmdCrpCheck({ ci: Boolean(opts.ci), json: opts.json })),
+	);
 
 program
 	.command("audit")
@@ -82,10 +96,7 @@ program
 program
 	.command("doctor")
 	.description("Diagnose environment and hook status")
-	.action(async () => {
-		const code = await cmdCrpDoctor();
-		if (code !== 0) process.exitCode = code;
-	});
+	.action(runAction((opts) => cmdCrpDoctor({ json: opts.json })));
 
 const skillCmd = program.command("skill").description("Skill management");
 
@@ -94,54 +105,50 @@ skillCmd
 	.description("Create a new skill")
 	.option("--description <text>", "Skill description")
 	.option("--primary", "Mark as default skill")
-	.action((name, options) => {
-		const code = cmdSkillCreate({ name, ...options });
-		if (code !== 0) process.exitCode = code;
-	});
+	.action(
+		runAction((opts, [name]) =>
+			cmdSkillCreate({
+				name,
+				description: opts.description as string | undefined,
+				primary: Boolean(opts.primary),
+			}),
+		),
+	);
 
 skillCmd
 	.command("delete <name>")
 	.description("Delete a skill")
 	.option("--force", "Skip confirmation")
-	.action((name, options) => {
-		const code = cmdSkillDelete({ name, ...options });
-		if (code !== 0) process.exitCode = code;
-	});
+	.action(
+		runAction((opts, [name]) =>
+			cmdSkillDelete({ name, force: Boolean(opts.force) }),
+		),
+	);
 
 skillCmd
 	.command("list")
 	.description("List skills")
-	.action(() => {
-		const code = cmdSkillList();
-		if (code !== 0) process.exitCode = code;
-	});
+	.action(runAction((opts) => cmdSkillList({ json: opts.json })));
 
 const kgCmd = program.command("kg").description("Knowledge graph operations");
 
 kgCmd
 	.command("query <topic>")
 	.description("Query KG index for a topic")
-	.action((topic) => {
-		const code = cmdCrpKg(topic);
-		if (code !== 0) process.exitCode = code;
-	});
+	.action(runAction((opts, [topic]) => cmdCrpKg(topic, { json: opts.json })));
 
 kgCmd
 	.command("sync")
 	.description("Generate .crp-kg.json")
 	.option("--skill <name>", "Target skill")
-	.action((options) => {
-		const code = cmdKgSync(options);
-		if (code !== 0) process.exitCode = code;
-	});
+	.action(
+		runAction((opts) => cmdKgSync({ skill: opts.skill as string | undefined })),
+	);
 
 kgCmd
 	.command("validate <path>")
 	.description("Validate .crp-kg.json")
-	.action((path) => {
-		const code = cmdKgValidate(path);
-		if (code !== 0) process.exitCode = code;
-	});
+	.action(runAction((_opts, [path]) => cmdKgValidate(path)));
 
 const telemetryCmd = program
 	.command("telemetry")
@@ -150,35 +157,30 @@ const telemetryCmd = program
 telemetryCmd
 	.command("start")
 	.description("Start telemetry recording")
-	.action(() => {
-		const code = cmdTelemetryStart();
-		if (code !== 0) process.exitCode = code;
-	});
+	.action(runAction(() => cmdTelemetryStart()));
 
 telemetryCmd
 	.command("stop")
 	.description("Stop telemetry recording")
-	.action(() => {
-		const code = cmdTelemetryStop();
-		if (code !== 0) process.exitCode = code;
-	});
+	.action(runAction(() => cmdTelemetryStop()));
 
 telemetryCmd
 	.command("status")
 	.description("Show telemetry status")
-	.action(() => {
-		const code = cmdTelemetryStatus();
-		if (code !== 0) process.exitCode = code;
-	});
+	.action(runAction(() => cmdTelemetryStatus()));
 
 telemetryCmd
 	.command("report")
 	.description("Generate telemetry report")
 	.option("--skill <name>", "Target skill")
-	.action((options) => {
-		const code = cmdTelemetryReport(options);
-		if (code !== 0) process.exitCode = code;
-	});
+	.action(
+		runAction((opts) =>
+			cmdTelemetryReport({
+				skill: opts.skill as string | null | undefined,
+				json: opts.json,
+			}),
+		),
+	);
 
 program
 	.command("status")
@@ -188,20 +190,16 @@ program
 program
 	.command("validate")
 	.description("Validate crp.yaml schema")
-	.action(() => {
-		const code = cmdValidate();
-		if (code !== 0) process.exitCode = code;
-	});
+	.action(runAction((opts) => cmdValidate({ json: opts.json })));
 
 program
 	.command("quality <file>")
 	.description(
 		"Score a skill file for production readiness (8 dimensions, 0-10 scale)",
 	)
-	.action((file) => {
-		const code = cmdCrpQuality(file);
-		if (code !== 0) process.exitCode = code;
-	});
+	.action(
+		runAction((opts, [file]) => cmdCrpQuality(file, { json: opts.json })),
+	);
 
 program.parseAsync(process.argv).catch((err) => {
 	console.error(err);
