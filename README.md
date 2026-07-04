@@ -54,8 +54,8 @@ This means Claude Code sessions automatically respect your project's context gov
    - Markdown markers (`<!-- CRP_INJECT_START/END -->`) so re-running `crp sync` updates only the injected section
 
 2. **Hook injection** — `crp init` detects whether you use Claude Code CLI or Claude Desktop and writes the correct hook format:
-   - **Claude Code CLI**: nested `hooks` array in `settings.json`
-   - **Claude Desktop**: flat `hooks` object in `settings.local.json`
+   - **Claude Code CLI**: nested `hooks` array in `settings.local.json`
+   - **Claude Desktop**: nested `hooks` array in `settings.json`
 
 3. **Telemetry** — Every `Read` tool call in Claude Code triggers the hook, which logs:
    - Timestamp, session ID, file path, and token estimate
