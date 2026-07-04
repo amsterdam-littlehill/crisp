@@ -27,7 +27,7 @@ bun run src/cli.ts check
 bun run src/cli.ts audit
 
 # Run self-checks
-bash templates/skill/scripts/smoke-test.sh test-skill
+bun run src/cli.ts skill check test-skill
 
 # Run tests
 bun test
