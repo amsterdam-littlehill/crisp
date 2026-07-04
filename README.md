@@ -1,14 +1,14 @@
 <!-- Banner -->
 <p align="center">
   <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/amsterdam-littlehill/crisp/master/.github/images/banner_crisp_dark.png">
-    <source media="(prefers-color-scheme: light)" srcset="https://raw.githubusercontent.com/amsterdam-littlehill/crisp/master/.github/images/banner_crisp_light.png">
-    <img alt="crisp - Context Router Protocol" src="https://raw.githubusercontent.com/amsterdam-littlehill/crisp/master/.github/images/banner_crisp_dark.png" width="800">
+    <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/Bandersnatch0x/crisp/master/.github/images/banner_crisp_dark.png">
+    <source media="(prefers-color-scheme: light)" srcset="https://raw.githubusercontent.com/Bandersnatch0x/crisp/master/.github/images/banner_crisp_light.png">
+    <img alt="crisp - Context Router Protocol" src="https://raw.githubusercontent.com/Bandersnatch0x/crisp/master/.github/images/banner_crisp_dark.png" width="800">
   </picture>
 </p>
 
 <p align="center">
-  <a href="https://github.com/amsterdam-littlehill/crisp/blob/main/LICENSE"><img src="https://img.shields.io/github/license/amsterdam-littlehill/crisp?style=flat-square&color=8b949e"></a>
+  <a href="https://github.com/Bandersnatch0x/crisp/blob/main/LICENSE"><img src="https://img.shields.io/github/license/Bandersnatch0x/crisp?style=flat-square&color=8b949e"></a>
 </p>
 
 <p align="center">
@@ -27,7 +27,7 @@ crisp is a single Bun + TypeScript implementation of the Context Router Protocol
 ## What it does
 
 - Initialize CRP scaffolding for a project with a unified CLI
-- Create, list, and manage skills and their routing structure
+- Create, list, validate, and manage skills and their routing structure
 - Sync generated entry files and shell-facing artifacts
 - Audit token usage and tier distribution across the rule system
 - Build and validate a knowledge graph from CRP structures
@@ -136,7 +136,7 @@ The main entrypoint is `src/cli.ts`. Current command groups include:
 | Command | Purpose |
 |---|---|
 | `init` | Initialize CRP scaffolding for a project |
-| `skill` | Create, delete, or list skills |
+| `skill` | Create, check, delete, or list skills |
 | `sync` | Regenerate synced shell and entrypoint artifacts |
 | `check` | Verify injection fits within token budget |
 | `audit` | Show tier distribution and dead candidates |
@@ -146,6 +146,7 @@ The main entrypoint is `src/cli.ts`. Current command groups include:
 | `validate` | Validate crp.yaml schema |
 | `status` | Show project status summary |
 | `quality <file>` | Score a skill file for production readiness (8 dimensions) |
+| `lint` | Run biome check on src/ and tests/ |
 
 For detailed flags, use `bun run src/cli.ts <command> --help`.
 
@@ -162,13 +163,15 @@ These TypeScript modules implement the current toolkit surface:
 | `src/commands/crp-audit.ts` | Tier distribution and dead candidate detection |
 | `src/commands/crp-kg.ts` | kg query action (KG topic lookup) |
 | `src/commands/crp-doctor.ts` | Environment and hook status diagnosis |
-| `src/commands/skill.ts` | Skill creation, deletion, and listing |
+| `src/commands/skill.ts` | Skill creation, deletion, listing, and validation (`skill check`) |
 | `src/commands/kg.ts` | kg sync / kg validate actions |
 | `src/commands/telemetry.ts` | Telemetry status and reporting |
 | `src/commands/validate.ts` | crp.yaml schema validation |
+| `src/commands/lint.ts` | Biome check wrapper for src/ and tests/ |
 | `src/lib/manifest/` | Manifest I/O, validation, and frontmatter extraction |
-| `src/lib/crp/` | v3 core: routing, injection, audit, hooks |
+| `src/lib/crp/` | v3 core: routing, injection, and audit |
 | `src/lib/kg/` | Knowledge graph extraction, validation, and generation |
+| `src/lib/skill/` | Skill spec and validation — single source of truth for skill structure |
 | `src/lib/telemetry/` | Telemetry reporting |
 
 ## Configuration
