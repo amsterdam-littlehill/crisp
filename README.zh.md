@@ -59,7 +59,7 @@ CRP 为 **Claude Code**（CLI、桌面端和 IDE 插件）提供原生集成。�
 
 3. **遥测** — Claude Code 中每次 `Read` 工具调用都会触发 hook，记录：
    - 时间戳、会话 ID、文件路径与 token 估算
-   - 数据写入 `.crp/telemetry/reads.jsonl`，运行 `crp telemetry report` 时会与 `log.jsonl` 合并
+   - 数据写入 `.crp/telemetry/reads.jsonl`，由 `crp telemetry report` 读取
 
 ### 手动设置（如果你跳过了 init）
 
@@ -142,7 +142,7 @@ bun test
 | `audit` | 展示层级分布与 dead candidate |
 | `kg` | 同步或校验 CRP 知识图谱 |
 | `doctor` | 诊断环境与 hook 状态 |
-| `telemetry` | 启动、停止、查看或报告遥测 |
+| `telemetry` | 查看或报告遥测 |
 | `validate` | 运行仓库级校验 |
 | `status` | 显示项目状态摘要 |
 | `quality <file>` | 对 skill 文件进行生产就绪度评分（8 个维度） |
@@ -164,12 +164,12 @@ bun test
 | `src/commands/crp-doctor.ts` | 环境与 hook 状态诊断 |
 | `src/commands/skill.ts` | Skill 创建、删除与列出 |
 | `src/commands/kg.ts` | kg sync / kg validate 动作 |
-| `src/commands/telemetry.ts` | 遥测生命周期与报告 |
+| `src/commands/telemetry.ts` | 遥测状态与报告 |
 | `src/commands/validate.ts` | crp.yaml 模式校验 |
 | `src/lib/manifest/` | Manifest I/O、校验与 frontmatter 提取 |
 | `src/lib/crp/` | v3 核心：路由、injection、审计、迁移、hooks |
 | `src/lib/kg/` | 知识图谱提取、校验与生成 |
-| `src/lib/telemetry/` | 遥测钩子、日志与报告 |
+| `src/lib/telemetry/` | 遥测报告 |
 
 ## 配置
 

@@ -14,9 +14,7 @@ import { cmdSkillCreate, cmdSkillDelete, cmdSkillList } from "./commands/skill";
 import { cmdStatus } from "./commands/status";
 import {
 	cmdTelemetryReport,
-	cmdTelemetryStart,
 	cmdTelemetryStatus,
-	cmdTelemetryStop,
 } from "./commands/telemetry";
 import { cmdValidate } from "./commands/validate";
 
@@ -155,16 +153,6 @@ kgCmd
 const telemetryCmd = program
 	.command("telemetry")
 	.description("Telemetry operations");
-
-telemetryCmd
-	.command("start")
-	.description("Start telemetry recording")
-	.action(runAction(() => cmdTelemetryStart()));
-
-telemetryCmd
-	.command("stop")
-	.description("Stop telemetry recording")
-	.action(runAction(() => cmdTelemetryStop()));
 
 telemetryCmd
 	.command("status")

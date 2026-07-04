@@ -59,7 +59,7 @@ This means Claude Code sessions automatically respect your project's context gov
 
 3. **Telemetry** — Every `Read` tool call in Claude Code triggers the hook, which logs:
    - Timestamp, session ID, file path, and token estimate
-   - Data is written to `.crp/telemetry/reads.jsonl` and merged with `log.jsonl` when you run `crp telemetry report`
+   - Data is written to `.crp/telemetry/reads.jsonl` and read by `crp telemetry report`
 
 ### Manual setup (if you skipped init)
 
@@ -142,7 +142,7 @@ The main entrypoint is `src/cli.ts`. Current command groups include:
 | `audit` | Show tier distribution and dead candidates |
 | `kg` | Sync or validate the CRP knowledge graph |
 | `doctor` | Diagnose environment and hook status |
-| `telemetry` | Start, stop, inspect, or report telemetry |
+| `telemetry` | Inspect or report telemetry |
 | `validate` | Validate crp.yaml schema |
 | `status` | Show project status summary |
 | `quality <file>` | Score a skill file for production readiness (8 dimensions) |
@@ -164,12 +164,12 @@ These TypeScript modules implement the current toolkit surface:
 | `src/commands/crp-doctor.ts` | Environment and hook status diagnosis |
 | `src/commands/skill.ts` | Skill creation, deletion, and listing |
 | `src/commands/kg.ts` | kg sync / kg validate actions |
-| `src/commands/telemetry.ts` | Telemetry lifecycle and reporting |
+| `src/commands/telemetry.ts` | Telemetry status and reporting |
 | `src/commands/validate.ts` | crp.yaml schema validation |
 | `src/lib/manifest/` | Manifest I/O, validation, and frontmatter extraction |
 | `src/lib/crp/` | v3 core: routing, injection, audit, hooks |
 | `src/lib/kg/` | Knowledge graph extraction, validation, and generation |
-| `src/lib/telemetry/` | Telemetry hooks, logging, and reporting |
+| `src/lib/telemetry/` | Telemetry reporting |
 
 ## Configuration
 

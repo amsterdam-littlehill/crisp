@@ -1,7 +1,6 @@
 import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { loadManifest, manifestPath } from "../manifest/io";
-import { loadTelemetryLog } from "./logger";
 
 export function deriveSkipEvents(
 	kgPath: string,
@@ -83,10 +82,8 @@ export function deriveSkipEvents(
 }
 
 function loadReportReadEvents(): Array<Record<string, unknown>> {
-	const events = loadTelemetryLog();
-	const readEvents = events.filter((e) => e.event_type === "READ");
-	if (readEvents.length > 0) return readEvents;
-
+	// reads.jsonl is the canonical telemetry source, written by the
+	// post-read.mjs hook that crp init installs. log.jsonl is gone.
 	const readsPath = join(".crp", "telemetry", "reads.jsonl");
 	if (!existsSync(readsPath)) return [];
 
@@ -205,7 +202,7 @@ export function runReport(skillName?: string | null): number {
 
 	if (readEvents.length === 0) {
 		console.log("No telemetry events recorded");
-		console.log("\nRun 'crp telemetry start' to begin recording");
+		console.log("\nRun 'crp init' to install the telemetry hook");
 		return 0;
 	}
 

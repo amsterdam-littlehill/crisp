@@ -1,250 +1,108 @@
 import { describe, expect, test } from "bun:test";
-import {
-	existsSync,
-	mkdirSync,
-	mkdtempSync,
-	readFileSync,
-	rmSync,
-	writeFileSync,
-} from "node:fs";
+import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import {
-	checkHookStatus,
-	injectHook,
-	removeHook,
-} from "../../src/lib/telemetry/hooks";
-import {
-	getLogStats,
-	loadTelemetryLog,
-	recordReadEvent,
-} from "../../src/lib/telemetry/logger";
+import { cmdTelemetryStatus } from "../../src/commands/telemetry";
 import { runReport } from "../../src/lib/telemetry/reporter";
 
-describe("recordReadEvent", () => {
-	test("creates log file with event", () => {
-		const dir = mkdtempSync(join(tmpdir(), "crisp-tel-"));
-		const _logPath = join(dir, "log.jsonl");
-		recordReadEvent({
-			timestamp: "2024-01-01T00:00:00Z",
-			event_type: "READ",
-			file: "test.md",
-			skill: "backend",
-			tokens: 100,
-			tier: "hot",
-		});
-		try {
-			const events = loadTelemetryLog();
-			expect(events.length).toBeGreaterThan(0);
-			const last = events[events.length - 1];
-			expect(last.event_type).toBe("READ");
-			expect(last.file).toBe("test.md");
-			expect(last.skill).toBe("backend");
-			expect(last.tokens).toBe(100);
-		} finally {
-			// Clean up global state
-			try {
-				rmSync(".crisp", { recursive: true, force: true });
-			} catch {
-				/* ignore */
-			}
-		}
-	});
-});
+describe("cmdTelemetryStatus", () => {
+	test("reports ACTIVE and counts events from reads.jsonl", () => {
+		const dir = mkdtempSync(join(tmpdir(), "crisp-tel-status-"));
+		const originalCwd = process.cwd();
+		process.chdir(dir);
 
-describe("loadTelemetryLog", () => {
-	test("returns empty for missing file", () => {
-		const dir = mkdtempSync(join(tmpdir(), "crisp-tel-"));
-		const logPath = join(dir, "nonexistent.jsonl");
-		const events = loadTelemetryLog(logPath);
-		expect(events).toEqual([]);
-		rmSync(dir, { recursive: true, force: true });
-	});
-
-	test("parses valid events", () => {
-		const dir = mkdtempSync(join(tmpdir(), "crisp-tel-"));
-		const logPath = join(dir, "log.jsonl");
-		const lines = [
-			JSON.stringify({ event_type: "READ", file: "a.md", tokens: 10 }),
-			JSON.stringify({ event_type: "READ", file: "b.md", tokens: 20 }),
-		];
-		writeFileSync(logPath, `${lines.join("\n")}\n`);
-		try {
-			const events = loadTelemetryLog(logPath);
-			expect(events.length).toBe(2);
-			expect(events[0].file).toBe("a.md");
-			expect(events[1].file).toBe("b.md");
-		} finally {
-			rmSync(dir, { recursive: true, force: true });
-		}
-	});
-
-	test("skips malformed lines", () => {
-		const dir = mkdtempSync(join(tmpdir(), "crisp-tel-"));
-		const logPath = join(dir, "log.jsonl");
+		// Install the canonical post-read hook so checkStatus reports ACTIVE.
+		// settings.local.json is the claude-code adapter's file, so it wins
+		// detection priority.
+		mkdirSync(join(dir, ".claude"), { recursive: true });
 		writeFileSync(
-			logPath,
-			'{"event_type":"READ"}\nnot-json\n{"file":"c.md"}\n',
+			join(dir, ".claude", "settings.local.json"),
+			JSON.stringify({
+				hooks: {
+					PostToolUse: [
+						{
+							matcher: "Read",
+							hooks: [
+								{
+									type: "command",
+									command: `node "${join(dir, ".crp", "hooks", "post-read.mjs")}"`,
+								},
+							],
+						},
+					],
+				},
+			}),
+			"utf-8",
 		);
-		try {
-			const events = loadTelemetryLog(logPath);
-			expect(events.length).toBe(2);
-		} finally {
-			rmSync(dir, { recursive: true, force: true });
-		}
-	});
 
-	test("returns empty for empty file", () => {
-		const dir = mkdtempSync(join(tmpdir(), "crisp-tel-"));
-		const logPath = join(dir, "log.jsonl");
-		writeFileSync(logPath, "");
-		try {
-			const events = loadTelemetryLog(logPath);
-			expect(events).toEqual([]);
-		} finally {
-			rmSync(dir, { recursive: true, force: true });
-		}
-	});
-});
-
-describe("getLogStats", () => {
-	test("returns zeros for empty log", () => {
-		const dir = mkdtempSync(join(tmpdir(), "crisp-tel-"));
-		const logPath = join(dir, "log.jsonl");
-		writeFileSync(logPath, "");
-		try {
-			const stats = getLogStats(logPath);
-			expect(stats.total_events).toBe(0);
-			expect(stats.total_reads).toBe(0);
-			expect(stats.total_tokens).toBe(0);
-			expect(stats.top_files).toEqual([]);
-		} finally {
-			rmSync(dir, { recursive: true, force: true });
-		}
-	});
-
-	test("aggregates read events", () => {
-		const dir = mkdtempSync(join(tmpdir(), "crisp-tel-"));
-		const logPath = join(dir, "log.jsonl");
-		const lines = [
-			JSON.stringify({ event_type: "READ", file: "a.md", tokens: 10 }),
-			JSON.stringify({ event_type: "READ", file: "a.md", tokens: 20 }),
-			JSON.stringify({ event_type: "WRITE", file: "b.md", tokens: 5 }),
+		// Seed reads.jsonl with two events
+		mkdirSync(join(dir, ".crp", "telemetry"), { recursive: true });
+		const reads = [
+			{
+				ts: "2026-04-30T10:00:00Z",
+				session_id: "s1",
+				file: "skills/backend/SKILL.md",
+				tokens: 100,
+			},
+			{
+				ts: "2026-04-30T10:05:00Z",
+				session_id: "s1",
+				file: "skills/backend/SKILL.md",
+				tokens: 100,
+			},
 		];
-		writeFileSync(logPath, `${lines.join("\n")}\n`);
-		try {
-			const stats = getLogStats(logPath);
-			expect(stats.total_events).toBe(3);
-			expect(stats.total_reads).toBe(2);
-			expect(stats.total_tokens).toBe(30);
-			expect((stats.top_files as Array<Record<string, unknown>>).length).toBe(
-				1,
-			);
-			expect((stats.top_files as Array<Record<string, unknown>>)[0].file).toBe(
-				"a.md",
-			);
-		} finally {
-			rmSync(dir, { recursive: true, force: true });
-		}
-	});
-});
+		writeFileSync(
+			join(dir, ".crp", "telemetry", "reads.jsonl"),
+			`${reads.map((r) => JSON.stringify(r)).join("\n")}\n`,
+			"utf-8",
+		);
 
-describe("injectHook", () => {
-	test("creates settings.json and hook script", () => {
-		const dir = mkdtempSync(join(tmpdir(), "crisp-hook-"));
-		const settingsPath = join(dir, "settings.json");
-		try {
-			injectHook(settingsPath);
-			expect(existsSync(settingsPath)).toBe(true);
-			const settings = JSON.parse(readFileSync(settingsPath, "utf-8"));
-			expect(settings.hooks).toBeDefined();
-			expect(Array.isArray(settings.hooks.PostToolUse)).toBe(true);
-			const hookCmd = settings.hooks.PostToolUse.find(
-				(h: Record<string, unknown>) =>
-					typeof h.command === "string" && h.command.includes("telemetry-hook"),
-			);
-			expect(hookCmd).toBeDefined();
-			expect(hookCmd.tool).toBe("Read");
-		} finally {
-			rmSync(dir, { recursive: true, force: true });
-			try {
-				rmSync(".claude", { recursive: true, force: true });
-			} catch {
-				/* ignore */
-			}
-		}
-	});
-});
-
-describe("removeHook", () => {
-	test("removes hook from settings", () => {
-		const dir = mkdtempSync(join(tmpdir(), "crisp-hook-"));
-		const settingsPath = join(dir, "settings.json");
-		const settings = {
-			hooks: {
-				PostToolUse: [
-					{
-						tool: "Read",
-						command:
-							"bun run .claude/hooks/telemetry-hook.ts --read " +
-							"$" +
-							"{file_path}",
-					},
-					{ tool: "Edit", command: "other" },
-				],
-			},
+		const logs: string[] = [];
+		const originalLog = console.log;
+		console.log = (...args: unknown[]) => {
+			logs.push(args.join(" "));
 		};
-		writeFileSync(settingsPath, JSON.stringify(settings, null, 2));
+
 		try {
-			removeHook(settingsPath);
-			const updated = JSON.parse(readFileSync(settingsPath, "utf-8"));
-			expect(updated.hooks.PostToolUse.length).toBe(1);
-			expect(updated.hooks.PostToolUse[0].tool).toBe("Edit");
+			const code = cmdTelemetryStatus();
+			expect(code).toBe(0);
+			const output = logs.join("\n");
+			expect(output).toContain("Telemetry hook: ACTIVE");
+			expect(output).toContain("Events recorded: 2");
 		} finally {
+			console.log = originalLog;
+			process.chdir(originalCwd);
 			rmSync(dir, { recursive: true, force: true });
 		}
 	});
 
-	test("handles missing settings file", () => {
-		expect(() => removeHook("/nonexistent/settings.json")).not.toThrow();
-	});
-});
+	test("reports INACTIVE and zero events when nothing is set up", () => {
+		const dir = mkdtempSync(join(tmpdir(), "crisp-tel-empty-"));
+		const originalCwd = process.cwd();
+		process.chdir(dir);
 
-describe("checkHookStatus", () => {
-	test("returns inactive for missing settings", () => {
-		const status = checkHookStatus("/nonexistent/settings.json");
-		expect(status.active).toBe(false);
-		// eventCount depends on CWD .crp/telemetry state — not relevant here
-	});
-
-	test("detects active hook", () => {
-		const dir = mkdtempSync(join(tmpdir(), "crisp-hook-"));
-		const settingsPath = join(dir, "settings.json");
-		const settings = {
-			hooks: {
-				PostToolUse: [
-					{
-						tool: "Read",
-						command:
-							"bun run .claude/hooks/telemetry-hook.ts --read " +
-							"$" +
-							"{file_path}",
-					},
-				],
-			},
+		const logs: string[] = [];
+		const originalLog = console.log;
+		console.log = (...args: unknown[]) => {
+			logs.push(args.join(" "));
 		};
-		writeFileSync(settingsPath, JSON.stringify(settings));
+
 		try {
-			const status = checkHookStatus(settingsPath);
-			expect(status.active).toBe(true);
+			const code = cmdTelemetryStatus();
+			expect(code).toBe(0);
+			const output = logs.join("\n");
+			expect(output).toContain("Telemetry hook: INACTIVE");
+			expect(output).toContain("Events recorded: 0");
 		} finally {
+			console.log = originalLog;
+			process.chdir(originalCwd);
 			rmSync(dir, { recursive: true, force: true });
 		}
 	});
 });
 
 describe("runReport", () => {
-	test("reads reads.jsonl when log.jsonl is empty", () => {
+	test("reads reads.jsonl", () => {
 		const dir = mkdtempSync(join(tmpdir(), "crisp-report-"));
 		const originalCwd = process.cwd();
 		process.chdir(dir);
