@@ -12,7 +12,7 @@ import { join } from "node:path";
 import { cmdCrpKg, cmdKgSync } from "../../src/commands/kg";
 import { queryKg } from "../../src/lib/kg/kg-index";
 
-describe("crp-kg.ts", () => {
+describe("kg.ts (query/sync)", () => {
 	let tempDir: string;
 	let originalCwd: string;
 

@@ -1,6 +1,6 @@
 import { existsSync, readFileSync, statSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
-import { printError, printOk, printWarn } from "../lib/cli/format";
+import { emitJson, printError, printOk, printWarn } from "../lib/cli/format";
 import { getSkillSourceDirs } from "../lib/crp/skill-source";
 import { generateKnowledgeGraph } from "../lib/kg/generator";
 import {
@@ -108,18 +108,12 @@ export function cmdCrpKg(
 ): number {
 	if (options.json) {
 		const result = queryKgStructured(query);
-		console.log(
-			JSON.stringify(
-				{
-					topic: result.topic,
-					matched: result.matched,
-					truncated: result.truncated,
-					totalTokens: result.totalTokens,
-				},
-				null,
-				2,
-			),
-		);
+		emitJson({
+			topic: result.topic,
+			matched: result.matched,
+			truncated: result.truncated,
+			totalTokens: result.totalTokens,
+		});
 		return 0;
 	}
 	const result = queryKg(query);

@@ -16,23 +16,17 @@ export function cmdSkillCheck(
 ): number {
 	if (!name) {
 		if (options.json) {
-			console.log(
-				JSON.stringify(
+			emitJson({
+				name,
+				valid: false,
+				issues: [
 					{
-						name,
-						valid: false,
-						issues: [
-							{
-								severity: "error",
-								code: "missing-name",
-								message: "Skill name is required",
-							},
-						],
+						severity: "error",
+						code: "missing-name",
+						message: "Skill name is required",
 					},
-					null,
-					2,
-				),
-			);
+				],
+			});
 			return 1;
 		}
 		printError(
@@ -55,23 +49,17 @@ export function cmdSkillCheck(
 
 	if (!skillDir) {
 		if (options.json) {
-			console.log(
-				JSON.stringify(
+			emitJson({
+				name,
+				valid: false,
+				issues: [
 					{
-						name,
-						valid: false,
-						issues: [
-							{
-								severity: "error",
-								code: "not-found",
-								message: `Skill directory not found: ${name}`,
-							},
-						],
+						severity: "error",
+						code: "not-found",
+						message: `Skill directory not found: ${name}`,
 					},
-					null,
-					2,
-				),
-			);
+				],
+			});
 			return 1;
 		}
 		printError(

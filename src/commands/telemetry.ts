@@ -1,12 +1,23 @@
+import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { emitJson } from "../lib/cli/format";
-import { readReadEvents } from "../lib/crp/analyzer";
 import { getDefaultAdapter } from "../lib/hooks/adapter";
 import { buildReportSummary, runReport } from "../lib/telemetry/reporter";
 
 function countReadEvents(): number {
-	// reads.jsonl is the canonical source, written by post-read.mjs.
-	return readReadEvents(join(".crp", "telemetry", "reads.jsonl")).length;
+	// reads.jsonl is the canonical source, written by post-read.mjs. Counts
+	// non-empty lines (NOT parsed events) — preserves the original status
+	// semantics; this is a line counter, distinct from the shared readReadEvents
+	// parser used by reporter/analyzer.
+	const readsPath = join(".crp", "telemetry", "reads.jsonl");
+	if (!existsSync(readsPath)) return 0;
+	try {
+		const content = readFileSync(readsPath, "utf-8").trim();
+		if (!content) return 0;
+		return content.split("\n").filter(Boolean).length;
+	} catch {
+		return 0;
+	}
 }
 
 export function cmdTelemetryStatus(): number {

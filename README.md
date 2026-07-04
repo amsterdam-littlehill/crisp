@@ -140,7 +140,7 @@ The main entrypoint is `src/cli.ts`. Current command groups include:
 | `sync` | Regenerate synced shell and entrypoint artifacts |
 | `check` | Verify injection fits within token budget |
 | `audit` | Show tier distribution and dead candidates |
-| `kg` | Sync or validate the CRP knowledge graph |
+| `kg` | Query, sync, or validate the CRP knowledge graph |
 | `doctor` | Diagnose environment and hook status |
 | `telemetry` | Inspect or report telemetry |
 | `validate` | Validate crp.yaml schema |

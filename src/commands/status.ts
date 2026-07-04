@@ -5,7 +5,11 @@ import { emitJson, printError, printOk, printWarn } from "../lib/cli/format";
 import { hasInjectionBlock, readClaudeMd } from "../lib/crp/claude-md";
 import { getSkillSourceDirs } from "../lib/crp/skill-source";
 import { getDefaultAdapter } from "../lib/hooks/adapter";
-import { loadManifest, manifestPath } from "../lib/manifest/io";
+import {
+	DEFAULT_SESSION_INJECT_TOKENS,
+	loadManifest,
+	manifestPath,
+} from "../lib/manifest/io";
 
 function formatBytes(bytes: number): string {
 	if (bytes === 0) return "0 B";
@@ -103,7 +107,8 @@ export function cmdStatus(options: { json?: boolean } = {}): number {
 
 	// Token budget
 	let totalTokens = 0;
-	const maxTokens = manifest.crp?.session_inject?.max_tokens ?? 300;
+	const maxTokens =
+		manifest.crp?.session_inject?.max_tokens ?? DEFAULT_SESSION_INJECT_TOKENS;
 	if (existsSync(routesPath)) {
 		try {
 			const routes = JSON.parse(readFileSync(routesPath, "utf-8"));

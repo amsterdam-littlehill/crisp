@@ -140,7 +140,7 @@ bun test
 | `sync` | 重新生成同步后的入口与 shell 产物 |
 | `check` | 校验 injection 是否在 token 预算内 |
 | `audit` | 展示层级分布与 dead candidate |
-| `kg` | 同步或校验 CRP 知识图谱 |
+| `kg` | 查询、同步或校验 CRP 知识图谱 |
 | `doctor` | 诊断环境与 hook 状态 |
 | `telemetry` | 查看或报告遥测 |
 | `validate` | 运行仓库级校验 |

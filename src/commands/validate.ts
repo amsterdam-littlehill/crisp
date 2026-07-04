@@ -9,13 +9,7 @@ export function cmdValidate(options: { json?: boolean } = {}): number {
 	const manifest = loadManifest(manifestPath());
 	if (!manifest.project) {
 		if (options.json) {
-			console.log(
-				JSON.stringify(
-					{ valid: false, errors: ["No crp.yaml found"] },
-					null,
-					2,
-				),
-			);
+			emitJson({ valid: false, errors: ["No crp.yaml found"] });
 			return 1;
 		}
 		printError(
