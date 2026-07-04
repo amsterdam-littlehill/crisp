@@ -1,4 +1,4 @@
-import { printError, printOk } from "../lib/cli/format";
+import { emitJson, printError, printOk } from "../lib/cli/format";
 import {
 	loadManifest,
 	manifestPath,
@@ -9,13 +9,7 @@ export function cmdValidate(options: { json?: boolean } = {}): number {
 	const manifest = loadManifest(manifestPath());
 	if (!manifest.project) {
 		if (options.json) {
-			console.log(
-				JSON.stringify(
-					{ valid: false, errors: ["No crp.yaml found"] },
-					null,
-					2,
-				),
-			);
+			emitJson({ valid: false, errors: ["No crp.yaml found"] });
 			return 1;
 		}
 		printError(
@@ -29,9 +23,7 @@ export function cmdValidate(options: { json?: boolean } = {}): number {
 	const errors = validateManifest(manifest);
 
 	if (options.json) {
-		console.log(
-			JSON.stringify({ valid: errors.length === 0, errors }, null, 2),
-		);
+		emitJson({ valid: errors.length === 0, errors });
 		return errors.length === 0 ? 0 : 1;
 	}
 

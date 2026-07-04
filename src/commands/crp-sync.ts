@@ -1,14 +1,14 @@
 import { existsSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
-import { printOk, printWarn } from "../lib/cli/format";
+import { emitJson, printOk, printWarn } from "../lib/cli/format";
 import { analyzeReads } from "../lib/crp/analyzer";
 import { hasInjectionBlock, updateClaudeMd } from "../lib/crp/claude-md";
 import { updateCodexInstructions } from "../lib/crp/codex-instructions";
 import type { Routes } from "../lib/crp/injection";
 import { generateRoutes } from "../lib/crp/routes";
 import { getSkillSourceDirs, type SkillSource } from "../lib/crp/skill-source";
+import type { CrpManifest } from "../lib/manifest/io";
 import { loadManifest, manifestPath } from "../lib/manifest/io";
-import type { CrpManifest } from "../lib/manifest/types";
 
 export interface SyncOptions {
 	check?: boolean;
@@ -127,7 +127,7 @@ export function cmdCrpSync(options: SyncOptions = {}): number {
 				skippedUser,
 				totalTokens: routes.l0_inject_tokens ?? null,
 			};
-			console.log(JSON.stringify(result, null, 2));
+			emitJson(result);
 			return 0;
 		}
 		console.log(`[CHECK] Would generate routes with:`);

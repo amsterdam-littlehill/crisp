@@ -8,6 +8,7 @@
  */
 import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
+import { DEFAULT_SESSION_INJECT_TOKENS } from "../../manifest/io";
 import type { Routes } from "../injection";
 import { buildInjection as buildInjectionImpl } from "../injection";
 
@@ -19,7 +20,7 @@ export function buildFallbackMessage(): string {
 }
 
 export function buildInjection(routes: Routes): string {
-	return buildInjectionImpl(routes, 300).text;
+	return buildInjectionImpl(routes, DEFAULT_SESSION_INJECT_TOKENS).text;
 }
 
 export function runSessionStart(routesPath: string = ROUTES_PATH): string {

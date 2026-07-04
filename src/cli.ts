@@ -5,17 +5,12 @@ import { cmdCrpAudit } from "./commands/crp-audit";
 import { cmdCrpCheck } from "./commands/crp-check";
 import { cmdCrpDoctor } from "./commands/crp-doctor";
 import { cmdCrpInit } from "./commands/crp-init";
-import { cmdCrpKg } from "./commands/crp-kg";
 import { cmdCrpQuality } from "./commands/crp-quality";
 import { cmdCrpSync } from "./commands/crp-sync";
-import { cmdKgSync, cmdKgValidate } from "./commands/kg";
+import { cmdCrpKg, cmdKgSync, cmdKgValidate } from "./commands/kg";
 import { cmdLint } from "./commands/lint";
-import {
-	cmdSkillCheck,
-	cmdSkillCreate,
-	cmdSkillDelete,
-	cmdSkillList,
-} from "./commands/skill";
+import { cmdSkillCreate, cmdSkillDelete, cmdSkillList } from "./commands/skill";
+import { cmdSkillCheck } from "./commands/skill-check";
 import { cmdStatus } from "./commands/status";
 import { cmdTelemetryReport, cmdTelemetryStatus } from "./commands/telemetry";
 import { cmdValidate } from "./commands/validate";
@@ -173,15 +168,7 @@ telemetryCmd
 telemetryCmd
 	.command("report")
 	.description("Generate telemetry report")
-	.option("--skill <name>", "Target skill")
-	.action(
-		runAction((opts) =>
-			cmdTelemetryReport({
-				skill: opts.skill as string | null | undefined,
-				json: opts.json,
-			}),
-		),
-	);
+	.action(runAction((opts) => cmdTelemetryReport({ json: opts.json })));
 
 program
 	.command("status")

@@ -1,4 +1,5 @@
-import type { CrpManifest } from "./types";
+import { isSafeSkillName } from "../skill/spec";
+import type { CrpManifest } from "./io";
 
 export function validateManifest(data: Partial<CrpManifest>): string[] {
 	const errors: string[] = [];
@@ -37,6 +38,10 @@ export function validateManifest(data: Partial<CrpManifest>): string[] {
 				errors.push(`skills[${i}] missing 'name'`);
 			} else if (typeof name !== "string") {
 				errors.push(`skills[${i}].name must be a string`);
+			} else if (!isSafeSkillName(name)) {
+				errors.push(
+					`skills[${i}].name is not a valid skill name: '${name}' (path separators are not allowed)`,
+				);
 			} else if (names.has(name)) {
 				errors.push(`Duplicate skill name: '${name}'`);
 			} else {

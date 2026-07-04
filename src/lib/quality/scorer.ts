@@ -1,3 +1,5 @@
+import { SKILL_SPEC } from "../skill/spec";
+
 // Scoring constants
 const DENSITY_SCALE_FACTOR = 10;
 const DENSITY_MAX = 1.0;
@@ -40,7 +42,17 @@ const BULLET_PATTERN = /^[\s]*[-*][\s]+/m;
 const LABEL_PATTERN =
 	/\*\*(Decision|Rationale|Status|Impact|File|Alternative|Enforcement)\*\*\s*:/gi;
 const CHECKLIST_PATTERN = /-\s*\[\s*[ x]\s*\]/;
-const PLACEHOLDER_PATTERN = /\{\{[A-Z_]+\}\}|<!--\s*FILL:/g;
+// Placeholder/fill detection. The FILL marker comes from SKILL_SPEC (single
+// source of truth); the {{CAPS}} arm catches any other unfilled template
+// variable and is a deliberate superset of SKILL_SPEC.placeholderResidues.
+// Anti-drift: tests/lib/quality.test.ts pins that every placeholderResidue +
+// the fillMarkerPattern is caught here.
+const escapeRe = (s: string): string =>
+	s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+const PLACEHOLDER_PATTERN = new RegExp(
+	`\\{\\{[A-Z_]+\\}\\}|${escapeRe(SKILL_SPEC.fillMarkerPattern)}`,
+	"g",
+);
 const CROSS_REF_PATTERN = /`[^`]+\.(md|mdc|py|sh)`/g;
 const AMBIGUOUS_PRONOUN_PATTERN = /\b(it|this|that|them)\b/gim;
 const SENTENCE_SPLIT_PATTERN = /[.!?\n]+/;
@@ -87,6 +99,11 @@ const IMPERATIVE_STARTERS = [
 	"never",
 ];
 
+// Zone 1-7 layout markers from templates/skill/SKILL.md. These are the
+// attention-alignment signal the scorer rewards; they are distinct from
+// SKILL_SPEC.requiredSkillMdSections (structural validation). The template is
+// the shared anchor — spec.test.ts pins that templates/skill/ satisfies the
+// spec, so a zone rename surfaces there too.
 const ZONE_MARKERS = [
 	"Attention Sink",
 	"Stable Prefix",

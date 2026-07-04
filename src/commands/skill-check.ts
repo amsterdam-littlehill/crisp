@@ -1,7 +1,8 @@
 import { existsSync } from "node:fs";
 import { join } from "node:path";
-import { printError, printOk, printWarn } from "../lib/cli/format";
+import { emitJson, printError, printOk, printWarn } from "../lib/cli/format";
 import { getSkillSourceDirs } from "../lib/crp/skill-source";
+import { isSafeSkillName } from "../lib/skill/spec";
 import { validateSkillAgainstSpec } from "../lib/skill/validate";
 
 /**
@@ -16,29 +17,46 @@ export function cmdSkillCheck(
 ): number {
 	if (!name) {
 		if (options.json) {
-			console.log(
-				JSON.stringify(
+			emitJson({
+				name,
+				valid: false,
+				issues: [
 					{
-						name,
-						valid: false,
-						issues: [
-							{
-								severity: "error",
-								code: "missing-name",
-								message: "Skill name is required",
-							},
-						],
+						severity: "error",
+						code: "missing-name",
+						message: "Skill name is required",
 					},
-					null,
-					2,
-				),
-			);
+				],
+			});
 			return 1;
 		}
 		printError(
 			"Skill name is required",
 			undefined,
 			"Usage: crp skill check <name>",
+		);
+		return 1;
+	}
+
+	if (!isSafeSkillName(name)) {
+		if (options.json) {
+			emitJson({
+				name,
+				valid: false,
+				issues: [
+					{
+						severity: "error",
+						code: "invalid-name",
+						message: `Invalid skill name: ${name}`,
+					},
+				],
+			});
+			return 1;
+		}
+		printError(
+			`Invalid skill name: ${name}`,
+			undefined,
+			"Skill names must not contain path separators.",
 		);
 		return 1;
 	}
@@ -55,23 +73,17 @@ export function cmdSkillCheck(
 
 	if (!skillDir) {
 		if (options.json) {
-			console.log(
-				JSON.stringify(
+			emitJson({
+				name,
+				valid: false,
+				issues: [
 					{
-						name,
-						valid: false,
-						issues: [
-							{
-								severity: "error",
-								code: "not-found",
-								message: `Skill directory not found: ${name}`,
-							},
-						],
+						severity: "error",
+						code: "not-found",
+						message: `Skill directory not found: ${name}`,
 					},
-					null,
-					2,
-				),
-			);
+				],
+			});
 			return 1;
 		}
 		printError(
@@ -88,7 +100,7 @@ export function cmdSkillCheck(
 	const valid = errors.length === 0;
 
 	if (options.json) {
-		console.log(JSON.stringify({ name, valid, issues }, null, 2));
+		emitJson({ name, valid, issues });
 		return valid ? 0 : 1;
 	}
 

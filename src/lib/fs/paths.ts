@@ -16,25 +16,3 @@ export const TEMPLATES_DIR = existsSync(
 )
 	? distTemplates
 	: srcTemplates;
-const PROJECT_ROOT = dirname(TEMPLATES_DIR);
-export const SKILLS_DIR = join(PROJECT_ROOT, ".claude", "skills");
-
-export function projectPath(...segments: string[]): string {
-	return resolve(PROJECT_ROOT, ...segments);
-}
-
-export function templatePath(...segments: string[]): string {
-	return join(TEMPLATES_DIR, ...segments);
-}
-
-export function skillDirPath(skillName: string): string {
-	return join(SKILLS_DIR, skillName);
-}
-
-export function fileExists(path: string): boolean {
-	return existsSync(path);
-}
-
-export function dirExists(path: string): boolean {
-	return existsSync(path);
-}

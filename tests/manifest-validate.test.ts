@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import type { CrpManifest } from "../src/lib/manifest/types";
+import type { CrpManifest } from "../src/lib/manifest/io";
 import { validateManifest } from "../src/lib/manifest/validate";
 
 function makeCrp(tiers: {
@@ -100,6 +100,40 @@ describe("validateManifest", () => {
 		const errors = validateManifest(manifest);
 		expect(errors).toContain(
 			"crp.tiers.inline_threshold must be a number between 0 and 1",
+		);
+	});
+
+	test("skill name with path separator is rejected (traversal)", () => {
+		const manifest = {
+			project: { name: "test" },
+			skills: [{ name: "../escape" }, { name: "a/b" }, { name: "win\\path" }],
+		};
+		const errors = validateManifest(manifest);
+		// All three traversal vectors are flagged.
+		expect(
+			errors.filter((e) => e.includes("not a valid skill name")).length,
+		).toBe(3);
+	});
+
+	test("skill name '.' and '..' are rejected", () => {
+		const manifest = {
+			project: { name: "test" },
+			skills: [{ name: "." }, { name: ".." }],
+		};
+		const errors = validateManifest(manifest);
+		expect(
+			errors.filter((e) => e.includes("not a valid skill name")).length,
+		).toBe(2);
+	});
+
+	test("skill name with an embedded dot is allowed (not a traversal)", () => {
+		const manifest = {
+			project: { name: "test" },
+			skills: [{ name: "v1.2" }],
+		};
+		const errors = validateManifest(manifest);
+		expect(errors.every((e) => !e.includes("not a valid skill name"))).toBe(
+			true,
 		);
 	});
 });

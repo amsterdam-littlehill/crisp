@@ -1,4 +1,5 @@
 import { green, red, yellow } from "../lib/cli/colors";
+import { emitJson } from "../lib/cli/format";
 import { runDoctorChecks } from "../lib/crp/doctor";
 
 export async function cmdCrpDoctor(
@@ -6,7 +7,7 @@ export async function cmdCrpDoctor(
 ): Promise<number> {
 	const checks = await runDoctorChecks();
 	if (options.json) {
-		console.log(JSON.stringify({ checks }, null, 2));
+		emitJson({ checks });
 		const hasFail = checks.some((c) => c.status === "fail");
 		return hasFail ? 1 : 0;
 	}

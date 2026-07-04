@@ -1,3 +1,10 @@
+// Closed set of KG edge kinds. validateKg rejects an edge whose `type` is
+// absent or not in this set — guards against typo'd/malformed edge types in
+// hand-built or external .crp-kg.json files. (Per-kind discriminator fields
+// like strength/confidence/weight are intentionally NOT enforced: they are
+// optional metadata with sensible defaults, not structural requirements.)
+export const KG_EDGE_TYPES = new Set(["DEPENDS_ON", "HAS_TAG", "REQUIRES"]);
+
 export interface KnowledgeGraph {
 	project: string;
 	generated_at: string;
@@ -110,6 +117,8 @@ export function validateKg(kg: unknown): string[] {
 
 		if (!edgeType) {
 			errors.push(`edges[${i}] missing 'type'`);
+		} else if (!KG_EDGE_TYPES.has(String(edgeType))) {
+			errors.push(`edges[${i}] unknown edge type: ${String(edgeType)}`);
 		}
 	}
 

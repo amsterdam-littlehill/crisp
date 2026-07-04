@@ -5,9 +5,13 @@ import { updateClaudeMd } from "../lib/crp/claude-md";
 import { updateCodexInstructions } from "../lib/crp/codex-instructions";
 import { TEMPLATES_DIR } from "../lib/fs/paths";
 import { getDefaultAdapter } from "../lib/hooks/adapter";
-import { defaultManifest } from "../lib/manifest/defaults";
-import { loadManifest, manifestPath, saveManifest } from "../lib/manifest/io";
-import type { CrpManifest } from "../lib/manifest/types";
+import type { CrpManifest } from "../lib/manifest/io";
+import {
+	defaultManifest,
+	loadManifest,
+	manifestPath,
+	saveManifest,
+} from "../lib/manifest/io";
 
 export interface InitOptions {
 	dryRun?: boolean;

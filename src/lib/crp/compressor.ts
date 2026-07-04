@@ -1,5 +1,5 @@
 import { readFileSync } from "node:fs";
-import { estimateTokens } from "./injection";
+import { estimateTokens } from "../tokens";
 
 export interface SkillSummary {
 	summary: string;

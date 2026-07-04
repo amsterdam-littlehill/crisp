@@ -9,11 +9,10 @@ import {
 } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { cmdCrpKg } from "../../src/commands/crp-kg";
-import { cmdKgSync } from "../../src/commands/kg";
-import { queryKg } from "../../src/lib/crp/kg-index";
+import { cmdCrpKg, cmdKgSync, cmdKgValidate } from "../../src/commands/kg";
+import { queryKg } from "../../src/lib/kg/kg-index";
 
-describe("crp-kg.ts", () => {
+describe("kg.ts (query/sync/validate)", () => {
 	let tempDir: string;
 	let originalCwd: string;
 
@@ -89,5 +88,13 @@ describe("crp-kg.ts", () => {
 		// Verify kg query works after sync
 		const queryResult = queryKg("backend", 200, tempDir);
 		expect(queryResult).toContain("API design patterns");
+	});
+
+	test("kg validate returns a clean error (no crash) on malformed JSON", () => {
+		const badPath = join(tempDir, "bad.crp-kg.json");
+		writeFileSync(badPath, "{ not valid json ", "utf-8");
+		// Must return 1 (clean error), not throw a raw SyntaxError.
+		const exitCode = cmdKgValidate(badPath);
+		expect(exitCode).toBe(1);
 	});
 });

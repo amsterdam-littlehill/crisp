@@ -4,6 +4,7 @@ import {
 	isProductionReady,
 	type ScoreDimension,
 } from "../../src/lib/quality/scorer";
+import { SKILL_SPEC } from "../../src/lib/skill/spec";
 
 describe("computeQualityScore", () => {
 	test("scores a well-structured skill.md", () => {
@@ -78,5 +79,25 @@ describe("isProductionReady", () => {
 		expect(
 			isProductionReady({ overall: 6.99 } as unknown as ScoreDimension),
 		).toBe(false);
+	});
+});
+
+describe("scorer ↔ SkillSpec anti-drift", () => {
+	// Pins that the scorer's placeholder detection stays a superset of the
+	// spec: every placeholderResidue + the fillMarkerPattern must reduce
+	// freshness. If the spec adds a residue the scorer no longer catches, this
+	// fails — closing the silent-drift gap between the two modules.
+	test("every spec placeholderResidue reduces freshness", () => {
+		for (const residue of SKILL_SPEC.placeholderResidues) {
+			const scored = computeQualityScore(`text with ${residue} here`);
+			expect(scored.freshness).toBeLessThan(10);
+		}
+	});
+
+	test("the spec fillMarkerPattern reduces freshness", () => {
+		const scored = computeQualityScore(
+			`text ${SKILL_SPEC.fillMarkerPattern} describe this -->`,
+		);
+		expect(scored.freshness).toBeLessThan(10);
 	});
 });

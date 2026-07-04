@@ -1,4 +1,5 @@
 import { spawnSync } from "node:child_process";
+import { emitJson } from "../lib/cli/format";
 
 export interface LintOptions {
 	json?: boolean;
@@ -60,7 +61,7 @@ export function cmdLint(options: LintOptions = {}): number {
 	};
 
 	if (options.json) {
-		console.log(JSON.stringify(summary, null, 2));
+		emitJson(summary);
 	} else {
 		console.log("== CRP Lint ==");
 		console.log(`Files with issues: ${summary.files.length}`);

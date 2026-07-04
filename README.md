@@ -140,7 +140,7 @@ The main entrypoint is `src/cli.ts`. Current command groups include:
 | `sync` | Regenerate synced shell and entrypoint artifacts |
 | `check` | Verify injection fits within token budget |
 | `audit` | Show tier distribution and dead candidates |
-| `kg` | Sync or validate the CRP knowledge graph |
+| `kg` | Query, sync, or validate the CRP knowledge graph |
 | `doctor` | Diagnose environment and hook status |
 | `telemetry` | Inspect or report telemetry |
 | `validate` | Validate crp.yaml schema |
@@ -157,21 +157,21 @@ These TypeScript modules implement the current toolkit surface:
 | Module | Responsibility |
 |---|---|
 | `src/cli.ts` | Unified CLI entry point |
-| `src/commands/crp-init.ts` | v3 project scaffolding (hooks, routes, telemetry) |
+| `src/commands/crp-init.ts` | Project scaffolding (hooks, routes, telemetry) |
 | `src/commands/crp-sync.ts` | Telemetry analysis and routes regeneration |
 | `src/commands/crp-check.ts` | Injection token budget verification |
 | `src/commands/crp-audit.ts` | Tier distribution and dead candidate detection |
-| `src/commands/crp-kg.ts` | kg query action (KG topic lookup) |
 | `src/commands/crp-doctor.ts` | Environment and hook status diagnosis |
-| `src/commands/skill.ts` | Skill creation, deletion, listing, and validation (`skill check`) |
-| `src/commands/kg.ts` | kg sync / kg validate actions |
+| `src/commands/skill.ts` | Skill creation, deletion, and listing |
+| `src/commands/skill-check.ts` | Skill validation against the SkillSpec (`skill check`) |
+| `src/commands/kg.ts` | kg query, sync, and validate actions |
 | `src/commands/telemetry.ts` | Telemetry status and reporting |
 | `src/commands/validate.ts` | crp.yaml schema validation |
 | `src/commands/lint.ts` | Biome check wrapper for src/ and tests/ |
-| `src/lib/manifest/` | Manifest I/O, validation, and frontmatter extraction |
-| `src/lib/crp/` | v3 core: routing, injection, and audit |
-| `src/lib/kg/` | Knowledge graph extraction, validation, and generation |
-| `src/lib/skill/` | Skill spec and validation — single source of truth for skill structure |
+| `src/lib/manifest/` | Manifest types + defaults + I/O (`io.ts`) and validation (`validate.ts`) |
+| `src/lib/crp/` | Core: routing, injection, token budget, telemetry analysis |
+| `src/lib/kg/` | Knowledge graph: schema, extraction, generation, index/query |
+| `src/lib/skill/` | SkillSpec (single source of truth) + validation |
 | `src/lib/telemetry/` | Telemetry reporting |
 
 ## Configuration

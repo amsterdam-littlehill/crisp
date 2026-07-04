@@ -23,26 +23,36 @@ export function extractSkillName(filePath: string): string | null {
 	return null;
 }
 
-export function analyzeReads(
-	logPath: string,
-	windowDays: number = 30,
-): SkillFrequency[] {
-	const records: ReadRecord[] = [];
+/**
+ * Read and parse a reads.jsonl file into records, skipping invalid/empty
+ * lines. The single reader for the canonical telemetry source — used by
+ * analyzeReads (frequencies), reporter (report), and the telemetry command
+ * (count). Returns [] on missing/unreadable files.
+ */
+export function readReadEvents(logPath: string): ReadRecord[] {
 	try {
 		const content = readFileSync(logPath, "utf-8").trim();
 		if (!content) return [];
+		const records: ReadRecord[] = [];
 		for (const line of content.split("\n")) {
 			if (!line.trim()) continue;
 			try {
-				const rec = JSON.parse(line) as ReadRecord;
-				records.push(rec);
+				records.push(JSON.parse(line) as ReadRecord);
 			} catch {
 				// ignore invalid lines
 			}
 		}
+		return records;
 	} catch {
 		return [];
 	}
+}
+
+export function analyzeReads(
+	logPath: string,
+	windowDays: number = 30,
+): SkillFrequency[] {
+	const records = readReadEvents(logPath);
 
 	const MS_PER_DAY = 86400000;
 	const cutoff = Date.now() - windowDays * MS_PER_DAY;
