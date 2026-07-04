@@ -1,5 +1,11 @@
 import { afterEach, beforeEach, describe, expect, test } from "bun:test";
-import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import {
+	mkdirSync,
+	mkdtempSync,
+	realpathSync,
+	rmSync,
+	writeFileSync,
+} from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { cmdCrpDoctor } from "../../src/commands/crp-doctor";
@@ -10,7 +16,10 @@ describe("crp-doctor.ts", () => {
 	let originalCwd: string;
 
 	beforeEach(() => {
-		tempDir = mkdtempSync(join(tmpdir(), "crp-doctor-test-"));
+		// Resolve the OS temp dir's 8.3 short path (Windows mkdtempSync can
+		// return AMSTER~1-style paths) to its long form — the doctor's .crp/
+		// writability probe otherwise flakes on the short form.
+		tempDir = realpathSync(mkdtempSync(join(tmpdir(), "crp-doctor-test-")));
 		originalCwd = process.cwd();
 		process.chdir(tempDir);
 	});

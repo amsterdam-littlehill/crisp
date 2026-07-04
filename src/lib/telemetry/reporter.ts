@@ -1,15 +1,15 @@
 import { join } from "node:path";
-import { extractSkillName, readReadEvents } from "../crp/analyzer";
+import {
+	extractSkillName,
+	type ReadRecord,
+	readReadEvents,
+} from "../crp/analyzer";
 import { loadManifest, manifestPath } from "../manifest/io";
 
-function loadReportReadEvents(): Array<Record<string, unknown>> {
+function loadReportReadEvents(): ReadRecord[] {
 	// reads.jsonl is the canonical telemetry source, written by the
 	// post-read.mjs hook that crp init installs.
-	const readsPath = join(".crp", "telemetry", "reads.jsonl");
-	return readReadEvents(readsPath).map((rec) => ({
-		...rec,
-		event_type: "READ",
-	}));
+	return readReadEvents(join(".crp", "telemetry", "reads.jsonl"));
 }
 
 export interface ReportSummary {
