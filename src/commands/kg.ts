@@ -12,6 +12,7 @@ import {
 import { validateKg } from "../lib/kg/schema";
 import type { CrpManifest } from "../lib/manifest/io";
 import { loadManifest, manifestPath } from "../lib/manifest/io";
+import { isSafeSkillName } from "../lib/skill/spec";
 
 function findSkillDir(name: string): string | null {
 	const dirs = getSkillSourceDirs();
@@ -42,6 +43,10 @@ export function cmdKgSync(options: { skill?: string | null }): number {
 
 	let anySuccess = false;
 	for (const skill of targetSkills) {
+		if (!isSafeSkillName(skill.name)) {
+			printWarn(`Skipping unsafe skill name in crp.yaml: '${skill.name}'`);
+			continue;
+		}
 		const skillDir = findSkillDir(skill.name);
 		if (!skillDir) {
 			printWarn(`Skill directory not found for: ${skill.name}`);
@@ -61,9 +66,13 @@ export function cmdKgSync(options: { skill?: string | null }): number {
 			continue;
 		}
 		const outPath = join(skillDir, ".crp-kg.json");
-		writeFileSync(outPath, `${JSON.stringify(kg, null, 2)}\n`, "utf-8");
-		console.log(`[WRITTEN] ${outPath}`);
-		anySuccess = true;
+		try {
+			writeFileSync(outPath, `${JSON.stringify(kg, null, 2)}\n`, "utf-8");
+			console.log(`[WRITTEN] ${outPath}`);
+			anySuccess = true;
+		} catch (e) {
+			printError(`Failed to write ${outPath}`, String((e as Error).message));
+		}
 	}
 
 	if (!anySuccess) {
@@ -90,7 +99,13 @@ export function cmdKgValidate(path: string): number {
 		printError(`File not found: ${path}`);
 		return 1;
 	}
-	const kg = JSON.parse(readFileSync(path, "utf-8"));
+	let kg: unknown;
+	try {
+		kg = JSON.parse(readFileSync(path, "utf-8"));
+	} catch (e) {
+		printError(`Invalid JSON in ${path}`, String((e as Error).message));
+		return 1;
+	}
 	const errors = validateKg(kg);
 	if (errors.length > 0) {
 		for (const err of errors) {

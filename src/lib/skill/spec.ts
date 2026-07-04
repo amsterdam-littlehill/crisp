@@ -175,3 +175,23 @@ export function parseCommonTasksTable(content: string): string[][] {
 	}
 	return rows;
 }
+
+/**
+ * Security floor for skill names that get joined into filesystem paths
+ * (findSkillDir, skill check, manifest validation). Rejects the traversal
+ * vectors — `/`, `\`, and the `.`/`..` segments — so a hostile crp.yaml or CLI
+ * arg cannot escape the skills directory. A single embedded dot (e.g. "v1.2")
+ * is allowed: it is one literal path segment, not a traversal. This is a
+ * weaker rule than commands/skill.ts `validateSkillName` (a stricter naming
+ * policy for created skills); isSafeSkillName is the hard-to-traverse floor
+ * every skill-name consumer must meet.
+ */
+const UNSAFE_SKILL_NAME = /[\\/]/;
+export function isSafeSkillName(name: string): boolean {
+	return (
+		name.length > 0 &&
+		name !== "." &&
+		name !== ".." &&
+		!UNSAFE_SKILL_NAME.test(name)
+	);
+}

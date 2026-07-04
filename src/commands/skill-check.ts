@@ -2,6 +2,7 @@ import { existsSync } from "node:fs";
 import { join } from "node:path";
 import { emitJson, printError, printOk, printWarn } from "../lib/cli/format";
 import { getSkillSourceDirs } from "../lib/crp/skill-source";
+import { isSafeSkillName } from "../lib/skill/spec";
 import { validateSkillAgainstSpec } from "../lib/skill/validate";
 
 /**
@@ -33,6 +34,29 @@ export function cmdSkillCheck(
 			"Skill name is required",
 			undefined,
 			"Usage: crp skill check <name>",
+		);
+		return 1;
+	}
+
+	if (!isSafeSkillName(name)) {
+		if (options.json) {
+			emitJson({
+				name,
+				valid: false,
+				issues: [
+					{
+						severity: "error",
+						code: "invalid-name",
+						message: `Invalid skill name: ${name}`,
+					},
+				],
+			});
+			return 1;
+		}
+		printError(
+			`Invalid skill name: ${name}`,
+			undefined,
+			"Skill names must not contain path separators.",
 		);
 		return 1;
 	}
