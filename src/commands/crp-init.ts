@@ -6,7 +6,7 @@ import { updateCodexInstructions } from "../lib/crp/codex-instructions";
 import { TEMPLATES_DIR } from "../lib/fs/paths";
 import { getDefaultAdapter } from "../lib/hooks/adapter";
 import { defaultManifest } from "../lib/manifest/defaults";
-import { loadManifest, saveManifest } from "../lib/manifest/io";
+import { loadManifest, manifestPath, saveManifest } from "../lib/manifest/io";
 import type { CrpManifest } from "../lib/manifest/types";
 
 export interface InitOptions {
@@ -71,7 +71,7 @@ export function cmdCrpInit(options: InitOptions = {}): number {
 	}
 
 	// Create crp.yaml if not exists
-	const rootYamlPath = join(projectDir, "crp.yaml");
+	const rootYamlPath = manifestPath(projectDir);
 	let manifest: CrpManifest;
 	if (!existsSync(rootYamlPath)) {
 		manifest = defaultManifest(

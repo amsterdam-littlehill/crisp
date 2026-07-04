@@ -1,6 +1,6 @@
 import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
-import { loadManifest } from "../manifest/io";
+import { loadManifest, manifestPath } from "../manifest/io";
 import { loadTelemetryLog } from "./logger";
 
 export function deriveSkipEvents(
@@ -128,7 +128,7 @@ export interface ReportSummary {
 export function buildReportSummary(
 	taskType?: string | null,
 ): ReportSummary | null {
-	const manifest = loadManifest("crp.yaml");
+	const manifest = loadManifest(manifestPath());
 	if (!manifest.project) return null;
 	const windowDays = manifest.crp?.telemetry?.window_days ?? 30;
 	const readEvents = loadReportReadEvents();
@@ -193,7 +193,7 @@ export function buildReportSummary(
 }
 
 export function runReport(skillName?: string | null): number {
-	const manifest = loadManifest("crp.yaml");
+	const manifest = loadManifest(manifestPath());
 	if (!manifest.project) {
 		console.log("ERROR: No crp.yaml found");
 		return 1;

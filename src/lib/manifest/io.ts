@@ -1,6 +1,12 @@
 import { readFileSync, writeFileSync } from "node:fs";
+import { join } from "node:path";
 import yaml from "js-yaml";
 import type { CrpManifest } from "./types";
+
+/** Canonical project manifest path. Single source of truth — all callers use this. */
+export function manifestPath(projectDir: string = process.cwd()): string {
+	return join(projectDir, "crp.yaml");
+}
 
 export class ManifestLoadError extends Error {
 	constructor(

@@ -1,6 +1,6 @@
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
-import { loadManifest } from "../manifest/io";
+import { loadManifest, manifestPath } from "../manifest/io";
 import { analyzeReads } from "./analyzer";
 import type { Routes } from "./injection";
 
@@ -44,7 +44,7 @@ export function runCrpAudit(projectDir: string = process.cwd()): AuditResult {
 	const totalTokens = routes?.l0_inject_tokens ?? 0;
 
 	// Load maxTokens from manifest, fallback to 300
-	const manifest = loadManifest(join(projectDir, "crp.yaml"));
+	const manifest = loadManifest(manifestPath(projectDir));
 	const maxTokens = manifest.crp?.session_inject?.max_tokens ?? 300;
 
 	// Find dead candidates: skills in routes with 0 reads in last 14 days

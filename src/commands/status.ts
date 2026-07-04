@@ -5,7 +5,7 @@ import { printError, printOk, printWarn } from "../lib/cli/format";
 import { hasInjectionBlock, readClaudeMd } from "../lib/crp/claude-md";
 import { getSkillSourceDirs } from "../lib/crp/skill-source";
 import { getDefaultAdapter } from "../lib/hooks/adapter";
-import { loadManifest } from "../lib/manifest/io";
+import { loadManifest, manifestPath } from "../lib/manifest/io";
 
 function formatBytes(bytes: number): string {
 	if (bytes === 0) return "0 B";
@@ -37,21 +37,21 @@ function getLastSyncTime(path: string): string | null {
 
 export function cmdStatus(options: { json?: boolean } = {}): number {
 	const projectDir = process.cwd();
-	const manifestPath = join(projectDir, "crp.yaml");
+	const manifestFile = manifestPath(projectDir);
 	const crpDir = join(projectDir, ".crp");
 	const routesPath = join(crpDir, "routes.json");
 	const telemetryPath = join(crpDir, "telemetry", "reads.jsonl");
 
 	// Project name from manifest (loadManifest returns {} when missing)
-	const manifest = loadManifest(manifestPath);
+	const manifest = loadManifest(manifestFile);
 	const projectName = manifest.project?.name || "(unknown)";
 
 	// Manifest status
-	const manifestExists = existsSync(manifestPath);
+	const manifestExists = existsSync(manifestFile);
 	let manifestValid = false;
 	if (manifestExists) {
 		try {
-			loadManifest(manifestPath);
+			loadManifest(manifestFile);
 			manifestValid = true;
 		} catch {
 			manifestValid = false;

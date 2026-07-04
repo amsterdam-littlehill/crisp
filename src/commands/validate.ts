@@ -1,8 +1,8 @@
 import { printError, printOk } from "../lib/cli/format";
-import { loadManifest, validateManifest } from "../lib/manifest/io";
+import { loadManifest, manifestPath, validateManifest } from "../lib/manifest/io";
 
 export function cmdValidate(options: { json?: boolean } = {}): number {
-	const manifest = loadManifest("crp.yaml");
+	const manifest = loadManifest(manifestPath());
 	if (!manifest.project) {
 		if (options.json) {
 			console.log(

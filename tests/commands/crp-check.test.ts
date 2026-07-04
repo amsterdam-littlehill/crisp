@@ -22,7 +22,7 @@ describe("crp-check.ts", () => {
 
 	function writeManifest(maxTokens: number) {
 		writeFileSync(
-			join(tempDir, ".crp", "crp.yaml"),
+			join(tempDir, "crp.yaml"),
 			[
 				"project:",
 				"  name: test",

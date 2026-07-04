@@ -7,7 +7,7 @@ import {
 } from "node:fs";
 import { dirname, join } from "node:path";
 import type { KnowledgeGraph } from "../kg/validator";
-import { loadManifest } from "../manifest/io";
+import { loadManifest, manifestPath } from "../manifest/io";
 import { estimateTokens } from "./injection";
 
 export interface KgChunk {
@@ -153,10 +153,9 @@ export function queryKgStructured(
 	}
 
 	// Load maxTokens from manifest if available
-	const manifestPath = join(projectDir, "crp.yaml");
 	let manifestMaxTokens: number | undefined;
 	try {
-		const manifest = loadManifest(manifestPath);
+		const manifest = loadManifest(manifestPath(projectDir));
 		manifestMaxTokens = manifest.crp?.kg?.max_query_tokens;
 	} catch {
 		// ignore manifest load errors
