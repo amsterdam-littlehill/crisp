@@ -34,24 +34,15 @@ jobs:
           bun $GITHUB_WORKSPACE/src/cli.ts skill create test-skill --description "CI fixture"
           bun $GITHUB_WORKSPACE/src/cli.ts sync
 
-      # The smoke-test is an author tool (48 checks against a filled-in skill).
-      # A fresh template intentionally leaves sections (hooks/, "Always Read",
-      # "Core Principles") for the author, so it reports FAILs on a scaffold.
-      # The CI contract worth enforcing here is that the shipped script EXECUTES
-      # (exit 0 = passed, 1 = failed checks = expected on fresh template,
-      # 2+/127 = broken script). Assert executability without continue-on-error.
-      - name: Verify smoke-test script executes
+      # crp skill check validates a skill against the SkillSpec (the single
+      # source of truth in src/lib/skill/spec.ts). A freshly scaffolded skill
+      # passes with warnings only (FILL markers + placeholders are author
+      # TODOs); errors indicate real structural drift between the template
+      # and the spec. The spec is aligned to templates/skill as canonical.
+      - name: Verify skill check passes on fresh scaffold
         run: |
           cd /tmp/test-project
-          set +e
-          bash .claude/skills/test-skill/scripts/smoke-test.sh test-skill > /tmp/smoke.out 2>&1
-          code=$?
-          cat /tmp/smoke.out
-          if [ "$code" -ge 2 ]; then
-            echo "::error::smoke-test script broken (exit $code)"
-            exit 1
-          fi
-          echo "smoke-test executed cleanly (exit $code, expected 0 or 1 on fresh template)"
+          bun $GITHUB_WORKSPACE/src/cli.ts skill check test-skill
 
       - name: Run health-check
         run: |

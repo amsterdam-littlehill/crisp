@@ -10,7 +10,12 @@ import { cmdCrpQuality } from "./commands/crp-quality";
 import { cmdCrpSync } from "./commands/crp-sync";
 import { cmdKgSync, cmdKgValidate } from "./commands/kg";
 import { cmdLint } from "./commands/lint";
-import { cmdSkillCreate, cmdSkillDelete, cmdSkillList } from "./commands/skill";
+import {
+	cmdSkillCheck,
+	cmdSkillCreate,
+	cmdSkillDelete,
+	cmdSkillList,
+} from "./commands/skill";
 import { cmdStatus } from "./commands/status";
 import {
 	cmdTelemetryReport,
@@ -123,6 +128,13 @@ skillCmd
 		runAction((opts, [name]) =>
 			cmdSkillDelete({ name, force: Boolean(opts.force) }),
 		),
+	);
+
+skillCmd
+	.command("check <name>")
+	.description("Validate a skill against the SkillSpec (replaces smoke-test.sh)")
+	.action(
+		runAction((opts, [name]) => cmdSkillCheck(name, { json: opts.json })),
 	);
 
 skillCmd
