@@ -1,14 +1,14 @@
 <!-- Banner -->
 <p align="center">
   <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/amsterdam-littlehill/crisp/master/.github/images/banner_crisp_dark.png">
-    <source media="(prefers-color-scheme: light)" srcset="https://raw.githubusercontent.com/amsterdam-littlehill/crisp/master/.github/images/banner_crisp_light.png">
-    <img alt="crisp - Context Router Protocol" src="https://raw.githubusercontent.com/amsterdam-littlehill/crisp/master/.github/images/banner_crisp_dark.png" width="800">
+    <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/Bandersnatch0x/crisp/master/.github/images/banner_crisp_dark.png">
+    <source media="(prefers-color-scheme: light)" srcset="https://raw.githubusercontent.com/Bandersnatch0x/crisp/master/.github/images/banner_crisp_light.png">
+    <img alt="crisp - Context Router Protocol" src="https://raw.githubusercontent.com/Bandersnatch0x/crisp/master/.github/images/banner_crisp_dark.png" width="800">
   </picture>
 </p>
 
 <p align="center">
-  <a href="https://github.com/amsterdam-littlehill/crisp/blob/main/LICENSE"><img src="https://img.shields.io/github/license/amsterdam-littlehill/crisp?style=flat-square&color=8b949e"></a>
+  <a href="https://github.com/Bandersnatch0x/crisp/blob/main/LICENSE"><img src="https://img.shields.io/github/license/Bandersnatch0x/crisp?style=flat-square&color=8b949e"></a>
 </p>
 
 <p align="center">
@@ -27,7 +27,7 @@ crisp 是 Context Router Protocol（CRP）的单一 Bun + TypeScript 实现。�
 ## 它能做什么
 
 - 通过统一 CLI 为项目初始化 CRP 脚手架
-- 创建、列出和管理 skills 及其路由结构
+- 创建、列出、校验和管理 skills 及其路由结构
 - 同步自动生成的入口文件和 shell 相关产物
 - 审计规则系统中的 token 使用与层级分布
 - 从 CRP 结构中构建并校验知识图谱
@@ -136,7 +136,7 @@ bun test
 | 命令 | 用途 |
 |---|---|
 | `init` | 为项目初始化 CRP 脚手架 |
-| `skill` | 创建、删除或列出 skills |
+| `skill` | 创建、校验、删除或列出 skills |
 | `sync` | 重新生成同步后的入口与 shell 产物 |
 | `check` | 校验 injection 是否在 token 预算内 |
 | `audit` | 展示层级分布与 dead candidate |
@@ -146,6 +146,7 @@ bun test
 | `validate` | 运行仓库级校验 |
 | `status` | 显示项目状态摘要 |
 | `quality <file>` | 对 skill 文件进行生产就绪度评分（8 个维度） |
+| `lint` | 在 src/ 与 tests/ 上运行 biome check |
 
 如需详细参数，可运行 `bun run src/cli.ts <command> --help`。
 
@@ -162,13 +163,15 @@ bun test
 | `src/commands/crp-audit.ts` | 层级分布与 dead candidate 检测 |
 | `src/commands/crp-kg.ts` | kg query 动作（KG 主题查询） |
 | `src/commands/crp-doctor.ts` | 环境与 hook 状态诊断 |
-| `src/commands/skill.ts` | Skill 创建、删除与列出 |
+| `src/commands/skill.ts` | Skill 创建、删除、列出与校验（`skill check`） |
 | `src/commands/kg.ts` | kg sync / kg validate 动作 |
 | `src/commands/telemetry.ts` | 遥测状态与报告 |
 | `src/commands/validate.ts` | crp.yaml 模式校验 |
+| `src/commands/lint.ts` | 针对 src/ 与 tests/ 的 biome check 封装 |
 | `src/lib/manifest/` | Manifest I/O、校验与 frontmatter 提取 |
-| `src/lib/crp/` | v3 核心：路由、injection、审计、迁移、hooks |
+| `src/lib/crp/` | v3 核心：路由、injection、审计 |
 | `src/lib/kg/` | 知识图谱提取、校验与生成 |
+| `src/lib/skill/` | Skill 规范与校验——skill 结构的唯一真相源 |
 | `src/lib/telemetry/` | 遥测报告 |
 
 ## 配置
