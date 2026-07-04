@@ -9,7 +9,7 @@ import {
 import { join } from "node:path";
 import { printError, printOk, printWarn } from "../lib/cli/format";
 import { getSkillSourceDirs, type SkillSource } from "../lib/crp/skill-source";
-import { loadManifest, saveManifest } from "../lib/manifest/io";
+import { loadManifest, manifestPath, saveManifest } from "../lib/manifest/io";
 import type { CrpManifest } from "../lib/manifest/types";
 import { copySkillTemplate } from "../lib/templates/copy";
 
@@ -31,7 +31,7 @@ export function cmdSkillCreate(options: {
 	description?: string;
 	primary?: boolean;
 }): number {
-	const manifest = loadManifest("crp.yaml");
+	const manifest = loadManifest(manifestPath());
 	if (!manifest.project) {
 		printError(
 			"No crp.yaml found",
@@ -70,7 +70,7 @@ export function cmdSkillCreate(options: {
 		if (skills.length === 1 || options.primary) {
 			manifest.default_skill = name;
 		}
-		saveManifest("crp.yaml", manifest as unknown as CrpManifest);
+		saveManifest(manifestPath(), manifest as unknown as CrpManifest);
 		console.log(`[REGISTERED] '${name}' in crp.yaml`);
 	}
 
@@ -81,7 +81,7 @@ export function cmdSkillDelete(options: {
 	name: string;
 	force?: boolean;
 }): number {
-	const manifest = loadManifest("crp.yaml");
+	const manifest = loadManifest(manifestPath());
 	if (!manifest.project) {
 		printError(
 			"No crp.yaml found",
@@ -142,7 +142,7 @@ export function cmdSkillDelete(options: {
 	if (manifest.default_skill === name) {
 		manifest.default_skill = skills.length > 0 ? skills[0].name : null;
 	}
-	saveManifest("crp.yaml", manifest as unknown as CrpManifest);
+	saveManifest(manifestPath(), manifest as unknown as CrpManifest);
 	printOk(`Unregistered '${name}' from crp.yaml`);
 
 	return 0;
@@ -190,7 +190,7 @@ function scanAllSkillDirs(): DiscoveredSkill[] {
 }
 
 export function cmdSkillList(options: { json?: boolean } = {}): number {
-	const manifest = loadManifest("crp.yaml");
+	const manifest = loadManifest(manifestPath());
 	if (!manifest.project) {
 		if (options.json) {
 			console.log(JSON.stringify({ skills: [], total: 0 }, null, 2));

@@ -7,7 +7,7 @@ import { updateCodexInstructions } from "../lib/crp/codex-instructions";
 import type { Routes } from "../lib/crp/injection";
 import { generateRoutes } from "../lib/crp/routes";
 import { getSkillSourceDirs, type SkillSource } from "../lib/crp/skill-source";
-import { loadManifest } from "../lib/manifest/io";
+import { loadManifest, manifestPath } from "../lib/manifest/io";
 import type { CrpManifest } from "../lib/manifest/types";
 
 export interface SyncOptions {
@@ -40,10 +40,9 @@ export function cmdCrpSync(options: SyncOptions = {}): number {
 	const crpDir = join(projectDir, ".crp");
 	const readsPath = join(crpDir, "telemetry", "reads.jsonl");
 	const routesPath = join(crpDir, "routes.json");
-	const manifestPath = join(projectDir, "crp.yaml");
 
 	// Load manifest for thresholds
-	const manifest = loadManifest(manifestPath);
+	const manifest = loadManifest(manifestPath(projectDir));
 	const windowDays = manifest.crp?.telemetry?.window_days ?? 30;
 
 	// Analyze reads

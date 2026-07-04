@@ -5,7 +5,7 @@ import { buildKgIndex, saveKgIndex } from "../lib/crp/kg-index";
 import { getSkillSourceDirs } from "../lib/crp/skill-source";
 import { generateKnowledgeGraph } from "../lib/kg/generator";
 import { validateKg } from "../lib/kg/validator";
-import { loadManifest } from "../lib/manifest/io";
+import { loadManifest, manifestPath } from "../lib/manifest/io";
 import type { CrpManifest } from "../lib/manifest/types";
 
 function findSkillDir(name: string): string | null {
@@ -23,7 +23,7 @@ function findSkillDir(name: string): string | null {
 }
 
 export function cmdKgSync(options: { skill?: string | null }): number {
-	const manifest = loadManifest("crp.yaml");
+	const manifest = loadManifest(manifestPath());
 	const skills = manifest.skills || [];
 
 	const targetSkills = options.skill
