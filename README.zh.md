@@ -40,7 +40,7 @@ crisp 是 Context Router Protocol（CRP）的单一 Bun + TypeScript 实现。�
 CRP 为 **Claude Code**（CLI、桌面端和 IDE 插件）提供原生集成。运行 `crp init` 或 `crp sync` 时，CLI 会自动：
 
 - 生成或更新项目根目录的 `CLAUDE.md`，包含 CRP 路由规则、skills 与层级配置
-- 向 `~/.claude/settings.json` 注入 `PostToolUse` hook，用于捕获 `Read` 事件并记录遥测
+- 向项目目录下的 `.claude/settings.local.json` 注入 `PostToolUse` hook，用于捕获 `Read` 事件并记录遥测（使用 local-only 文件，避免 hook 被共享/提交）
 - 写入 `post-read.mjs` hook 脚本，将文件读取记录保存到 `.crp/telemetry/reads.jsonl`
 
 这意味着 Claude Code 会话会自动遵循项目的上下文治理规则，无需手动复制粘贴。
@@ -192,7 +192,7 @@ bun run lint
 
 - **运行时**：Bun（`bun test` 与 `bun run` 必需）
 - **AI 助手**：Claude Code CLI、Claude Desktop 与 Claude IDE 插件
-  - Hooks 面向 `~/.claude/settings.json`（CLI）或 `~/.claude/settings.local.json`（Desktop）
+  - Hooks 面向项目目录下的 `.claude/settings.local.json`（CLI）或 `.claude/settings.json`（Desktop）——CLI 使用 local-only 文件，避免 hook 被共享/提交
   - 自动生成的 `CLAUDE.md` 会被所有 Claude Code 客户端自动加载
 - 其他平台可能可用，但当前未正式支持。
 

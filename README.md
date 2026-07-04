@@ -40,7 +40,7 @@ crisp is a single Bun + TypeScript implementation of the Context Router Protocol
 CRP provides first-class integration with **Claude Code** (the CLI, desktop, and IDE extensions). When you run `crp init` or `crp sync`, the CLI automatically:
 
 - Generates or updates `CLAUDE.md` with your project's CRP routing rules, skills, and tier configuration
-- Injects a `PostToolUse` hook into `~/.claude/settings.json` to capture `Read` events for telemetry
+- Injects a `PostToolUse` hook into the project's `.claude/settings.local.json` to capture `Read` events for telemetry (local-only file, so the hook isn't shared/committed)
 - Writes a `post-read.mjs` hook script that records file reads to `.crp/telemetry/reads.jsonl`
 
 This means Claude Code sessions automatically respect your project's context governance without manual copy-paste.
@@ -192,7 +192,7 @@ The `tests/` directory includes coverage for core modules such as CRP routing, i
 
 - **Runtime**: Bun (required for `bun test` and `bun run`)
 - **AI Assistant**: Claude Code CLI, Claude Desktop, and Claude IDE extensions
-  - Hooks target `~/.claude/settings.json` (CLI) or `~/.claude/settings.local.json` (Desktop)
+  - Hooks target the project's `.claude/settings.local.json` (CLI) or `.claude/settings.json` (Desktop) — CLI uses the local-only file so the telemetry hook isn't shared/committed
   - Auto-generated `CLAUDE.md` is picked up automatically by all Claude Code clients
 - Other platforms may work but are not currently supported.
 
