@@ -9,6 +9,7 @@ import {
 } from "node:fs";
 import { join } from "node:path";
 import type { CrpManifest } from "../manifest/types";
+import { SKILL_SPEC, tierForPath } from "../skill/spec";
 import { estimateTokens as estimateTokensRaw } from "../tokens";
 import {
 	extractDependencyMarkers,
@@ -34,19 +35,10 @@ function estimateTokens(
 }
 
 function inferTier(filePath: string, skillDir: string): string {
-	const name = filePath.toLowerCase().replace(/^.*[\\/]/, "");
-	if (name === "_hot-cache.md" || name === "skill.md") return "L0";
 	const rel = filePath.startsWith(skillDir)
 		? filePath.slice(skillDir.length).replace(/^[\\/]/, "")
 		: filePath;
-	const parts = rel.split(/[\\/]/);
-	if (parts.length > 1) {
-		const cat = parts[0].toLowerCase();
-		if (cat === "rules") return "L1";
-		if (cat === "workflows") return "L2";
-		if (cat === "references") return "L3";
-	}
-	return "L2";
+	return tierForPath(rel);
 }
 
 function inferFromCommonTasks(
@@ -59,9 +51,12 @@ function inferFromCommonTasks(
 		return [[], []];
 	}
 
+	const ct = SKILL_SPEC.commonTasks;
 	const taskTypes: Array<Record<string, unknown>> = [];
 	const requiresEdges: Array<Record<string, unknown>> = [];
-	const tableMatch = content.match(/##?\s*Common Tasks.*?(\|.*?\|.*)/is);
+	const tableMatch = content.match(
+		new RegExp(ct.headingRegex, ct.headingFlags),
+	);
 	if (!tableMatch) return [taskTypes, requiresEdges];
 
 	let tableText = tableMatch[1];
@@ -71,6 +66,12 @@ function inferFromCommonTasks(
 	const lines = tableText.split("\n").filter((l) => l.trim().startsWith("|"));
 	if (lines.length < 2) return [taskTypes, requiresEdges];
 
+	const fallbackIds = new Set(
+		ct.fallbackTokens.map((t) => t.toLowerCase().replace(/\s+/g, "-")),
+	);
+	const mustReadIdx = ct.mustReadColumn - 1;
+	const workflowIdx = ct.workflowColumn - 1;
+
 	for (const line of lines.slice(2)) {
 		const cols = line
 			.split("|")
@@ -78,8 +79,7 @@ function inferFromCommonTasks(
 			.filter((c) => c);
 		if (cols.length < 2) continue;
 		const taskName = cols[0].toLowerCase().replace(/\s+/g, "-");
-		if (taskName.startsWith("<!--") || taskName === "other-/-unlisted")
-			continue;
+		if (taskName.startsWith("<!--") || fallbackIds.has(taskName)) continue;
 
 		const keywords =
 			cols.length >= 4
@@ -93,8 +93,8 @@ function inferFromCommonTasks(
 			category: "execution",
 		});
 
-		if (cols.length >= 2 && cols[1]) {
-			for (const ref of cols[1].split("+").map((f) => f.trim())) {
+		if (cols.length > mustReadIdx && cols[mustReadIdx]) {
+			for (const ref of cols[mustReadIdx].split("+").map((f) => f.trim())) {
 				const cleaned = ref.replace(/`/g, "").replace(/\.md$/, "");
 				if (cleaned?.includes("/") && !cleaned.includes(" ")) {
 					requiresEdges.push({
@@ -107,8 +107,8 @@ function inferFromCommonTasks(
 				}
 			}
 		}
-		if (cols.length >= 3 && cols[2]) {
-			for (const ref of cols[2].split("+").map((f) => f.trim())) {
+		if (cols.length > workflowIdx && cols[workflowIdx]) {
+			for (const ref of cols[workflowIdx].split("+").map((f) => f.trim())) {
 				const cleaned = ref.replace(/`/g, "").replace(/\.md$/, "");
 				if (cleaned?.includes("/") && !cleaned.includes(" ")) {
 					requiresEdges.push({
