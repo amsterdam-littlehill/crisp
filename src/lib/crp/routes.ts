@@ -1,9 +1,10 @@
 import { existsSync } from "node:fs";
-import type { CrpManifest } from "../manifest/types";
+import type { CrpManifest } from "../manifest/io";
+import { estimateTokens } from "../tokens";
 import type { SkillFrequency } from "./analyzer";
 import { compressSkill } from "./compressor";
 import type { RouteSkill, Routes } from "./injection";
-import { buildInjection, estimateTokens } from "./injection";
+import { buildInjection } from "./injection";
 import { getSkillSourceDirs } from "./skill-source";
 
 export interface GenerateRoutesOptions {

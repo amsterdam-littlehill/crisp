@@ -7,7 +7,7 @@ import {
 	generateCodexInstructionsContent,
 	updateCodexInstructions,
 } from "../../../src/lib/crp/codex-instructions";
-import { defaultManifest } from "../../../src/lib/manifest/defaults";
+import { defaultManifest } from "../../../src/lib/manifest/io";
 
 describe("codex-instructions.ts", () => {
 	test("generates a compact Codex shell with the CRP injection block", () => {

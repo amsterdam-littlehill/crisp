@@ -1,6 +1,7 @@
 import { describe, expect, test } from "bun:test";
 import type { Routes } from "../../../src/lib/crp/injection";
-import { buildInjection, estimateTokens } from "../../../src/lib/crp/injection";
+import { buildInjection } from "../../../src/lib/crp/injection";
+import { estimateTokens } from "../../../src/lib/tokens";
 
 describe("injection.ts", () => {
 	const baseRoutes: Routes = {

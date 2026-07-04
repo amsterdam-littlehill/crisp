@@ -1,19 +1,12 @@
-import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
+import { emitJson } from "../lib/cli/format";
+import { readReadEvents } from "../lib/crp/analyzer";
 import { getDefaultAdapter } from "../lib/hooks/adapter";
 import { buildReportSummary, runReport } from "../lib/telemetry/reporter";
 
 function countReadEvents(): number {
 	// reads.jsonl is the canonical source, written by post-read.mjs.
-	const readsPath = join(".crp", "telemetry", "reads.jsonl");
-	if (!existsSync(readsPath)) return 0;
-	try {
-		const content = readFileSync(readsPath, "utf-8").trim();
-		if (!content) return 0;
-		return content.split("\n").filter(Boolean).length;
-	} catch {
-		return 0;
-	}
+	return readReadEvents(join(".crp", "telemetry", "reads.jsonl")).length;
 }
 
 export function cmdTelemetryStatus(): number {
@@ -27,18 +20,15 @@ export function cmdTelemetryStatus(): number {
 	return 0;
 }
 
-export function cmdTelemetryReport(options: {
-	skill?: string | null;
-	json?: boolean;
-}): number {
+export function cmdTelemetryReport(options: { json?: boolean }): number {
 	if (options.json) {
-		const summary = buildReportSummary(options.skill || null);
+		const summary = buildReportSummary();
 		if (summary === null) {
-			console.log(JSON.stringify({ error: "No crp.yaml found" }, null, 2));
+			emitJson({ error: "No crp.yaml found" });
 			return 1;
 		}
-		console.log(JSON.stringify(summary, null, 2));
+		emitJson(summary);
 		return 0;
 	}
-	return runReport(options.skill || null);
+	return runReport();
 }

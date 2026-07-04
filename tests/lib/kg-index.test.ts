@@ -7,7 +7,7 @@ import {
 	loadKgIndex,
 	queryKg,
 	saveKgIndex,
-} from "../../../src/lib/crp/kg-index";
+} from "../../src/lib/kg/kg-index";
 
 describe("kg-index.ts", () => {
 	let tempDir: string;

@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
-import type { KnowledgeGraph } from "../src/lib/kg/validator";
-import { validateKg } from "../src/lib/kg/validator";
+import type { KnowledgeGraph } from "../src/lib/kg/schema";
+import { validateKg } from "../src/lib/kg/schema";
 
 describe("validateKg", () => {
 	test("valid KG returns empty array", () => {

@@ -1,24 +1,15 @@
 import { createHash } from "node:crypto";
-import {
-	existsSync,
-	readdirSync,
-	readFileSync,
-	type Stats,
-	statSync,
-	writeFileSync,
-} from "node:fs";
+import { readdirSync, readFileSync, type Stats, statSync } from "node:fs";
 import { join } from "node:path";
-import type { CrpManifest } from "../manifest/types";
-import { SKILL_SPEC, tierForPath } from "../skill/spec";
+import type { CrpManifest } from "../manifest/io";
+import { parseCommonTasksTable, SKILL_SPEC, tierForPath } from "../skill/spec";
 import { estimateTokens as estimateTokensRaw } from "../tokens";
 import {
 	extractDependencyMarkers,
 	extractSummary,
 	extractTagMarkers,
-	generateHotCacheFile,
 } from "./extractor";
-import type { KnowledgeGraph } from "./validator";
-import { validateKg } from "./validator";
+import type { KnowledgeGraph } from "./schema";
 
 function estimateTokens(
 	text: string,
@@ -52,34 +43,13 @@ function inferFromCommonTasks(
 	}
 
 	const ct = SKILL_SPEC.commonTasks;
-	const taskTypes: Array<Record<string, unknown>> = [];
-	const requiresEdges: Array<Record<string, unknown>> = [];
-	const tableMatch = content.match(
-		new RegExp(ct.headingRegex, ct.headingFlags),
-	);
-	if (!tableMatch) return [taskTypes, requiresEdges];
-
-	let tableText = tableMatch[1];
-	const doubleNewline = tableText.indexOf("\n\n");
-	if (doubleNewline !== -1) tableText = tableText.slice(0, doubleNewline);
-
-	const lines = tableText.split("\n").filter((l) => l.trim().startsWith("|"));
-	if (lines.length < 2) return [taskTypes, requiresEdges];
-
-	const fallbackIds = new Set(
-		ct.fallbackTokens.map((t) => t.toLowerCase().replace(/\s+/g, "-")),
-	);
 	const mustReadIdx = ct.mustReadColumn - 1;
 	const workflowIdx = ct.workflowColumn - 1;
+	const taskTypes: Array<Record<string, unknown>> = [];
+	const requiresEdges: Array<Record<string, unknown>> = [];
 
-	for (const line of lines.slice(2)) {
-		const cols = line
-			.split("|")
-			.map((c) => c.trim())
-			.filter((c) => c);
-		if (cols.length < 2) continue;
+	for (const cols of parseCommonTasksTable(content)) {
 		const taskName = cols[0].toLowerCase().replace(/\s+/g, "-");
-		if (taskName.startsWith("<!--") || fallbackIds.has(taskName)) continue;
 
 		const keywords =
 			cols.length >= 4
@@ -168,6 +138,9 @@ export function generateKnowledgeGraph(
 		return !name.startsWith(".") && name !== "_hot-cache.md";
 	});
 
+	// Cache each file's content once; passes 2 and 3 read from the cache
+	// instead of re-reading the same files off disk.
+	const contentById = new Map<string, string>();
 	for (const filePath of mdFiles) {
 		const rel = filePath
 			.slice(skillDir.length)
@@ -175,6 +148,7 @@ export function generateKnowledgeGraph(
 			.replace(/\.md$/, "")
 			.replace(/\\/g, "/");
 		const content = readFileSync(filePath, "utf-8");
+		contentById.set(rel, content);
 		const [tokenCount] = estimateTokens(content, useTiktoken);
 		kg.nodes.files.push({
 			id: rel,
@@ -191,13 +165,8 @@ export function generateKnowledgeGraph(
 	}
 
 	for (const fnode of kg.nodes.files) {
-		const mdPath = join(skillDir, `${fnode.id}.md`);
-		let content: string;
-		try {
-			content = readFileSync(mdPath, "utf-8");
-		} catch {
-			continue;
-		}
+		const content = contentById.get(fnode.id);
+		if (!content) continue;
 		for (const dep of extractDependencyMarkers(content)) {
 			kg.edges.push({
 				from: fnode.id,
@@ -214,13 +183,8 @@ export function generateKnowledgeGraph(
 	kg.edges.push(...(requiresEdges as KnowledgeGraph["edges"]));
 
 	for (const fnode of kg.nodes.files) {
-		const mdPath = join(skillDir, `${fnode.id}.md`);
-		let content: string;
-		try {
-			content = readFileSync(mdPath, "utf-8");
-		} catch {
-			continue;
-		}
+		const content = contentById.get(fnode.id);
+		if (!content) continue;
 		for (const tag of extractTagMarkers(content)) {
 			const tagId = `tag:${tag.name}`;
 			if (!kg.nodes.tags.some((t) => t.id === tagId)) {
@@ -254,40 +218,19 @@ export function generateKnowledgeGraph(
 		}
 	}
 
+	// Drop edges whose from/to don't resolve to a created node. REQUIRES edges
+	// from Common Tasks and DEPENDS_ON edges from @depends-on markers carry
+	// author-typed refs meant to be in-skill files (ADR: `rules/x.md` form); a
+	// ref with no matching file is an author bug, not a node — the graph models
+	// what exists, so those are filtered here, not shipped as dangling refs
+	// validateKg would reject. HAS_TAG and auto-REQUIRES always resolve.
+	const validIds = new Set<string>();
+	for (const f of kg.nodes.files) validIds.add(f.id);
+	for (const t of kg.nodes.task_types) validIds.add(t.id);
+	for (const tag of kg.nodes.tags) validIds.add(tag.id);
+	kg.edges = kg.edges.filter(
+		(e) => validIds.has(String(e.from)) && validIds.has(String(e.to)),
+	);
+
 	return kg;
-}
-
-export function runKgSync(
-	skillName: string | null,
-	skillsDir: string,
-	manifest: CrpManifest,
-	outputPath?: string,
-): number {
-	const skills = manifest.skills || [];
-	const skillDirs: Array<[string, string]> = skillName
-		? [[skillName, join(skillsDir, skillName)]]
-		: skills.map((s) => [s.name, join(skillsDir, s.name)]);
-
-	for (const [name, skillDir] of skillDirs) {
-		if (!existsSync(skillDir)) {
-			console.log(`WARNING: Skill directory not found: ${skillDir}`);
-			continue;
-		}
-		const kg = generateKnowledgeGraph(skillDir, manifest);
-		const errors = validateKg(kg);
-		if (errors.length) {
-			console.log(`ERROR: Generated KG for '${name}' is invalid:`);
-			for (const e of errors) console.log(`  - ${e}`);
-			return 1;
-		}
-		const outPath = outputPath || join(skillDir, ".crp-kg.json");
-		writeFileSync(outPath, `${JSON.stringify(kg, null, 2)}\n`, "utf-8");
-		console.log(`[GENERATED] ${outPath}`);
-		console.log(`  Files: ${kg.nodes.files.length}`);
-		console.log(`  TaskTypes: ${kg.nodes.task_types.length}`);
-		console.log(`  Edges: ${kg.edges.length}`);
-		const hotCachePath = generateHotCacheFile(skillDir);
-		console.log(`[GENERATED] ${hotCachePath}`);
-	}
-	return 0;
 }

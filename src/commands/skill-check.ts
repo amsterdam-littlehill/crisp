@@ -1,6 +1,6 @@
 import { existsSync } from "node:fs";
 import { join } from "node:path";
-import { printError, printOk, printWarn } from "../lib/cli/format";
+import { emitJson, printError, printOk, printWarn } from "../lib/cli/format";
 import { getSkillSourceDirs } from "../lib/crp/skill-source";
 import { validateSkillAgainstSpec } from "../lib/skill/validate";
 
@@ -88,7 +88,7 @@ export function cmdSkillCheck(
 	const valid = errors.length === 0;
 
 	if (options.json) {
-		console.log(JSON.stringify({ name, valid, issues }, null, 2));
+		emitJson({ name, valid, issues });
 		return valid ? 0 : 1;
 	}
 

@@ -1,4 +1,4 @@
-import type { CrpManifest } from "./types";
+import type { CrpManifest } from "./io";
 
 export function validateManifest(data: Partial<CrpManifest>): string[] {
 	const errors: string[] = [];

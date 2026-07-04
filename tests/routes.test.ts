@@ -1,7 +1,7 @@
 import { describe, expect, test } from "bun:test";
 import type { SkillFrequency } from "../src/lib/crp/analyzer";
 import { generateRoutes } from "../src/lib/crp/routes";
-import type { CrpManifest } from "../src/lib/manifest/types";
+import type { CrpManifest } from "../src/lib/manifest/io";
 
 describe("generateRoutes", () => {
 	const baseManifest: CrpManifest = {

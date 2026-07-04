@@ -18,7 +18,7 @@ import {
 	statSync,
 } from "node:fs";
 import { join } from "node:path";
-import { type Issue, SKILL_SPEC } from "./spec";
+import { type Issue, parseCommonTasksTable, SKILL_SPEC } from "./spec";
 
 function isDirectory(p: string): boolean {
 	try {
@@ -87,6 +87,31 @@ export function validateSkillAgainstSpec(skillDir: string): Issue[] {
 				});
 			}
 		}
+
+		// Common Tasks Must-read/Workflow refs are meant to be in-skill files
+		// (ADR: `rules/x.md` form). The KG generator silently drops a ref whose
+		// file is absent (it can't be a node); surface that author bug here so
+		// `crp skill check` tells the author instead of the edge just vanishing.
+		const ct = SKILL_SPEC.commonTasks;
+		const rows = parseCommonTasksTable(skillMd);
+		const checkRefs = (idx: number, label: string): void => {
+			for (const cols of rows) {
+				if (idx >= cols.length || !cols[idx]) continue;
+				for (const ref of cols[idx].split("+").map((s) => s.trim())) {
+					const cleaned = ref.replace(/`/g, "").replace(/\.md$/, "");
+					if (!cleaned.includes("/") || cleaned.includes(" ")) continue;
+					if (!existsSync(join(skillDir, `${cleaned}.md`))) {
+						issues.push({
+							severity: "warn",
+							code: "common-tasks-missing-ref",
+							message: `Common Tasks ${label} ref '${cleaned}.md' does not exist in the skill dir`,
+						});
+					}
+				}
+			}
+		};
+		checkRefs(ct.mustReadColumn - 1, "Must-read");
+		checkRefs(ct.workflowColumn - 1, "Workflow");
 	}
 
 	for (const f of SKILL_SPEC.forbiddenFiles) {

@@ -1,18 +1,27 @@
 import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
-import type { CrpManifest } from "../manifest/types";
+import {
+	type CrpManifest,
+	DEFAULT_SESSION_INJECT_TOKENS,
+} from "../manifest/io";
 import type { Routes } from "./injection";
-import { buildInjection } from "./injection";
+import {
+	buildInjection,
+	CRP_INJECT_MARKER_END as CLAUDE_MD_MARKER_END,
+	CRP_INJECT_MARKER_START as CLAUDE_MD_MARKER_START,
+} from "./injection";
 
+// Re-export under the claude-md-specific names (public API used by callers/tests);
+// the value is the shared CRP_INJECT_MARKER constant (single source).
+export { CLAUDE_MD_MARKER_END, CLAUDE_MD_MARKER_START };
 export const CLAUDE_MD_FILENAME = "CLAUDE.md";
-export const CLAUDE_MD_MARKER_START = "<!-- CRP_INJECT_START -->";
-export const CLAUDE_MD_MARKER_END = "<!-- CRP_INJECT_END -->";
 
 export function generateClaudeMdContent(
 	routes: Routes,
 	manifest: CrpManifest,
 ): string {
-	const maxTokens = manifest.crp?.session_inject?.max_tokens ?? 300;
+	const maxTokens =
+		manifest.crp?.session_inject?.max_tokens ?? DEFAULT_SESSION_INJECT_TOKENS;
 	const injection = buildInjection(routes, maxTokens);
 	const lines: string[] = [
 		CLAUDE_MD_MARKER_START,

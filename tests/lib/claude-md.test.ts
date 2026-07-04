@@ -11,7 +11,7 @@ import {
 	updateClaudeMd,
 } from "../../src/lib/crp/claude-md";
 import type { Routes } from "../../src/lib/crp/injection";
-import type { CrpManifest } from "../../src/lib/manifest/types";
+import type { CrpManifest } from "../../src/lib/manifest/io";
 
 const testManifest: CrpManifest = {
 	project: { name: "test-project" },

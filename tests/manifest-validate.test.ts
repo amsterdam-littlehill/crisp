@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import type { CrpManifest } from "../src/lib/manifest/types";
+import type { CrpManifest } from "../src/lib/manifest/io";
 import { validateManifest } from "../src/lib/manifest/validate";
 
 function makeCrp(tiers: {

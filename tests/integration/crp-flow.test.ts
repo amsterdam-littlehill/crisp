@@ -16,7 +16,7 @@ import { cmdCrpSync } from "../../src/commands/crp-sync";
 import { cmdKgSync } from "../../src/commands/kg";
 import { cmdSkillCreate, cmdSkillDelete } from "../../src/commands/skill";
 import { cmdTelemetryReport } from "../../src/commands/telemetry";
-import { queryKg } from "../../src/lib/crp/kg-index";
+import { queryKg } from "../../src/lib/kg/kg-index";
 import { loadManifest } from "../../src/lib/manifest/io";
 
 describe("CRP end-to-end flow", () => {
@@ -103,8 +103,8 @@ describe("CRP end-to-end flow", () => {
 		// 8. Check passes
 		expect(cmdCrpCheck()).toBe(0);
 
-		// 9. Telemetry report reads both sources
-		expect(cmdTelemetryReport({ skill: null })).toBe(0);
+		// 9. Telemetry report runs
+		expect(cmdTelemetryReport({})).toBe(0);
 
 		// 10. Skill delete cleans up
 		expect(cmdSkillDelete({ name: "backend", force: true })).toBe(0);

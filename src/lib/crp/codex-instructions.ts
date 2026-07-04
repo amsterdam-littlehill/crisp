@@ -1,12 +1,17 @@
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
-import type { CrpManifest } from "../manifest/types";
+import {
+	type CrpManifest,
+	DEFAULT_SESSION_INJECT_TOKENS,
+} from "../manifest/io";
 import type { Routes } from "./injection";
-import { buildInjection } from "./injection";
+import {
+	buildInjection,
+	CRP_INJECT_MARKER_END as CODEX_INSTRUCTIONS_MARKER_END,
+	CRP_INJECT_MARKER_START as CODEX_INSTRUCTIONS_MARKER_START,
+} from "./injection";
 
 export const CODEX_INSTRUCTIONS_PATH = join(".codex", "instructions.md");
-export const CODEX_INSTRUCTIONS_MARKER_START = "<!-- CRP_INJECT_START -->";
-export const CODEX_INSTRUCTIONS_MARKER_END = "<!-- CRP_INJECT_END -->";
 
 export interface CodexInstructionsUpdateResult {
 	created: boolean;
@@ -18,7 +23,8 @@ export function generateCodexInstructionsContent(
 	manifest: CrpManifest,
 ): string {
 	const projectName = manifest.project?.name ?? "project";
-	const maxTokens = manifest.crp?.session_inject?.max_tokens ?? 300;
+	const maxTokens =
+		manifest.crp?.session_inject?.max_tokens ?? DEFAULT_SESSION_INJECT_TOKENS;
 	const injection = buildInjection(routes, maxTokens);
 
 	return [

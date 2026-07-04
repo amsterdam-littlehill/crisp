@@ -1,7 +1,7 @@
 import { existsSync, readdirSync, readFileSync, statSync } from "node:fs";
 import { join } from "node:path";
 import { green, red, yellow } from "../lib/cli/colors";
-import { printError, printOk, printWarn } from "../lib/cli/format";
+import { emitJson, printError, printOk, printWarn } from "../lib/cli/format";
 import { hasInjectionBlock, readClaudeMd } from "../lib/crp/claude-md";
 import { getSkillSourceDirs } from "../lib/crp/skill-source";
 import { getDefaultAdapter } from "../lib/hooks/adapter";
@@ -132,7 +132,7 @@ export function cmdStatus(options: { json?: boolean } = {}): number {
 	};
 
 	if (options.json) {
-		console.log(JSON.stringify(result, null, 2));
+		emitJson(result);
 		return 0;
 	}
 

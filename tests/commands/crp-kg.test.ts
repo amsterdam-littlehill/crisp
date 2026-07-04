@@ -9,9 +9,8 @@ import {
 } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { cmdCrpKg } from "../../src/commands/crp-kg";
-import { cmdKgSync } from "../../src/commands/kg";
-import { queryKg } from "../../src/lib/crp/kg-index";
+import { cmdCrpKg, cmdKgSync } from "../../src/commands/kg";
+import { queryKg } from "../../src/lib/kg/kg-index";
 
 describe("crp-kg.ts", () => {
 	let tempDir: string;

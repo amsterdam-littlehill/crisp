@@ -21,3 +21,11 @@ export function printOk(message: string): void {
 export function printInfo(message: string): void {
 	console.log(`[INFO] ${message}`);
 }
+
+/**
+ * Emit a value as the `--json` output (machine-readable). Single source for the
+ * JSON formatting so the indent/envelope is consistent across every command.
+ */
+export function emitJson(value: unknown): void {
+	console.log(JSON.stringify(value, null, 2));
+}

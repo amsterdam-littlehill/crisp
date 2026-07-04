@@ -7,13 +7,11 @@ import {
 	rmSync,
 } from "node:fs";
 import { join } from "node:path";
-import { printError, printOk, printWarn } from "../lib/cli/format";
+import { emitJson, printError, printOk, printWarn } from "../lib/cli/format";
 import { getSkillSourceDirs, type SkillSource } from "../lib/crp/skill-source";
+import type { CrpManifest } from "../lib/manifest/io";
 import { loadManifest, manifestPath, saveManifest } from "../lib/manifest/io";
-import type { CrpManifest } from "../lib/manifest/types";
 import { copySkillTemplate } from "../lib/templates/copy";
-
-export { cmdSkillCheck } from "./skill-check";
 
 function validateSkillName(name: string): string {
 	if (!name) throw new Error("Skill name cannot be empty");
@@ -195,7 +193,7 @@ export function cmdSkillList(options: { json?: boolean } = {}): number {
 	const manifest = loadManifest(manifestPath());
 	if (!manifest.project) {
 		if (options.json) {
-			console.log(JSON.stringify({ skills: [], total: 0 }, null, 2));
+			emitJson({ skills: [], total: 0 });
 			return 0;
 		}
 		printError(
@@ -237,7 +235,7 @@ export function cmdSkillList(options: { json?: boolean } = {}): number {
 				registered: isRegistered,
 			};
 		});
-		console.log(JSON.stringify({ skills, total: skills.length }, null, 2));
+		emitJson({ skills, total: skills.length });
 		return 0;
 	}
 

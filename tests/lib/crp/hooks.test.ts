@@ -8,20 +8,30 @@ import {
 	writeFileSync,
 } from "node:fs";
 import { tmpdir } from "node:os";
-import { join } from "node:path";
-import {
-	buildReadRecord,
-	isSkillFile,
-	logError,
-	runPostRead,
-} from "../../../src/lib/crp/hooks/post-read";
+import { dirname, join } from "node:path";
+import { fileURLToPath } from "node:url";
 import {
 	buildFallbackMessage,
 	buildInjection,
 	runSessionStart,
 } from "../../../src/lib/crp/hooks/session-start";
 
-describe("post-read.ts logic", () => {
+// The deployed hook is templates/hooks/post-read.mjs (a plain ESM script).
+// Test it through its real interface — spawn it as a subprocess — so the
+// tested artifact IS the deployed artifact. (The old src/lib/crp/hooks/post-read.ts
+// parallel was tested but never deployed; it is gone.)
+const HOOKS_TEST_DIR = dirname(fileURLToPath(import.meta.url));
+const POST_READ_MJS = join(
+	HOOKS_TEST_DIR,
+	"..",
+	"..",
+	"..",
+	"templates",
+	"hooks",
+	"post-read.mjs",
+);
+
+describe("post-read.mjs hook (deployed artifact, run as subprocess)", () => {
 	let tempDir: string;
 	let readsPath: string;
 	let errorPath: string;
@@ -36,30 +46,33 @@ describe("post-read.ts logic", () => {
 		rmSync(tempDir, { recursive: true, force: true });
 	});
 
-	test("isSkillFile identifies skill paths", () => {
-		expect(isSkillFile("/project/.claude/skills/backend.skill.md")).toBe(true);
-		expect(isSkillFile("/project/.claude/skills/backend.md")).toBe(true);
-		expect(isSkillFile("/project/src/main.ts")).toBe(false);
-		expect(isSkillFile("/project/README.md")).toBe(false);
-	});
+	function runHook(envInput: string): { exitCode: number; stdout: string } {
+		const proc = Bun.spawnSync({
+			cmd: ["bun", POST_READ_MJS],
+			cwd: tempDir,
+			env: {
+				...process.env,
+				CLAUDE_PROJECT_DIR: tempDir,
+				CLAUDE_HOOK_INPUT: envInput,
+			},
+			stdio: ["pipe", "pipe", "pipe"],
+		});
+		return {
+			exitCode: proc.exitCode,
+			stdout: proc.stdout == null ? "" : new TextDecoder().decode(proc.stdout),
+		};
+	}
 
-	test("buildReadRecord creates valid record", () => {
-		const record = buildReadRecord("sess-123", "/path/to/skill.md", 42);
-		expect(record.session_id).toBe("sess-123");
-		expect(record.file).toBe("/path/to/skill.md");
-		expect(record.tokens).toBe(42);
-		expect(record.ts).toBeString();
-	});
-
-	test("runPostRead records skill file read", () => {
+	test("records a skill file read", () => {
 		const envInput = JSON.stringify({
 			session_id: "sess-123",
-			tool_input: { file_path: "/project/.claude/skills/backend.skill.md" },
+			tool_input: {
+				file_path: join(tempDir, ".claude", "skills", "backend.skill.md"),
+			},
 		});
-
-		const exitCode = runPostRead(envInput, readsPath, errorPath);
+		const { exitCode, stdout } = runHook(envInput);
 		expect(exitCode).toBe(0);
-
+		expect(stdout.trim()).toBe("{}");
 		expect(existsSync(readsPath)).toBe(true);
 		const lines = readFileSync(readsPath, "utf-8").trim().split("\n");
 		expect(lines.length).toBe(1);
@@ -69,31 +82,20 @@ describe("post-read.ts logic", () => {
 		expect(record.tokens).toBeNumber();
 	});
 
-	test("runPostRead ignores non-skill files", () => {
+	test("ignores non-skill files", () => {
 		const envInput = JSON.stringify({
 			session_id: "sess-456",
-			tool_input: { file_path: "/project/src/main.ts" },
+			tool_input: { file_path: join(tempDir, "src", "main.ts") },
 		});
-
-		const exitCode = runPostRead(envInput, readsPath, errorPath);
+		const { exitCode } = runHook(envInput);
 		expect(exitCode).toBe(0);
 		expect(existsSync(readsPath)).toBe(false);
 	});
 
-	test("runPostRead handles invalid JSON gracefully", () => {
-		const exitCode = runPostRead("not-json", readsPath, errorPath);
+	test("handles invalid JSON gracefully", () => {
+		const { exitCode } = runHook("not-json");
 		expect(exitCode).toBe(0);
 		expect(existsSync(errorPath)).toBe(true);
-	});
-
-	test("logError writes to error log", () => {
-		logError("test error", errorPath);
-		expect(existsSync(errorPath)).toBe(true);
-		const lines = readFileSync(errorPath, "utf-8").trim().split("\n");
-		expect(lines.length).toBe(1);
-		const record = JSON.parse(lines[0]);
-		expect(record.error).toBe("test error");
-		expect(record.hook).toBe("post-read");
 	});
 });
 

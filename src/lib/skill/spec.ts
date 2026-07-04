@@ -140,3 +140,38 @@ export function tierForPath(relPath: string): Tier {
 	}
 	return SKILL_SPEC.defaultTier;
 }
+
+/**
+ * Parse the SKILL.md "Common Tasks" table into its data rows (as cell arrays),
+ * skipping the header, separator, fallback, and comment rows. Pure: string in,
+ * rows out. Shared by the KG generator (builds task_types + REQUIRES edges from
+ * the refs) and skill validation (warns on refs that don't resolve to a file —
+ * the generator silently drops those edges, so the author signal lives here).
+ */
+export function parseCommonTasksTable(content: string): string[][] {
+	const ct = SKILL_SPEC.commonTasks;
+	const tableMatch = content.match(
+		new RegExp(ct.headingRegex, ct.headingFlags),
+	);
+	if (!tableMatch) return [];
+	let tableText = tableMatch[1];
+	const doubleNewline = tableText.indexOf("\n\n");
+	if (doubleNewline !== -1) tableText = tableText.slice(0, doubleNewline);
+	const lines = tableText.split("\n").filter((l) => l.trim().startsWith("|"));
+	if (lines.length < 2) return [];
+	const fallbackIds = new Set(
+		ct.fallbackTokens.map((t) => t.toLowerCase().replace(/\s+/g, "-")),
+	);
+	const rows: string[][] = [];
+	for (const line of lines.slice(2)) {
+		const cols = line
+			.split("|")
+			.map((c) => c.trim())
+			.filter((c) => c);
+		if (cols.length < 2) continue;
+		const taskName = cols[0].toLowerCase().replace(/\s+/g, "-");
+		if (taskName.startsWith("<!--") || fallbackIds.has(taskName)) continue;
+		rows.push(cols);
+	}
+	return rows;
+}

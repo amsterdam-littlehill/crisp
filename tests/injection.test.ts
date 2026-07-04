@@ -1,6 +1,7 @@
 import { describe, expect, test } from "bun:test";
 import type { Routes } from "../src/lib/crp/injection";
-import { buildInjection, freeEncoder } from "../src/lib/crp/injection";
+import { buildInjection } from "../src/lib/crp/injection";
+import { freeEncoder } from "../src/lib/tokens";
 
 describe("buildInjection", () => {
 	test("empty routes returns base injection text", () => {

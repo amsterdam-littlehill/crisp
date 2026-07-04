@@ -1,12 +1,17 @@
 import { existsSync, readFileSync, statSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { printError, printOk, printWarn } from "../lib/cli/format";
-import { buildKgIndex, saveKgIndex } from "../lib/crp/kg-index";
 import { getSkillSourceDirs } from "../lib/crp/skill-source";
 import { generateKnowledgeGraph } from "../lib/kg/generator";
-import { validateKg } from "../lib/kg/validator";
+import {
+	buildKgIndex,
+	queryKg,
+	queryKgStructured,
+	saveKgIndex,
+} from "../lib/kg/kg-index";
+import { validateKg } from "../lib/kg/schema";
+import type { CrpManifest } from "../lib/manifest/io";
 import { loadManifest, manifestPath } from "../lib/manifest/io";
-import type { CrpManifest } from "../lib/manifest/types";
 
 function findSkillDir(name: string): string | null {
 	const dirs = getSkillSourceDirs();
@@ -44,6 +49,17 @@ export function cmdKgSync(options: { skill?: string | null }): number {
 		}
 		console.log(`\n== Generating KG: ${skill.name} (${skillDir}) ==`);
 		const kg = generateKnowledgeGraph(skillDir, manifest as CrpManifest);
+		// Self-check: the generator filters dangling refs, so this should never
+		// fire. If it does (regression), skip this skill rather than ship a
+		// malformed .crp-kg.json — anySuccess stays unset for it.
+		const kgErrors = validateKg(kg);
+		if (kgErrors.length > 0) {
+			for (const e of kgErrors) {
+				printError(`KG invalid for '${skill.name}': ${e}`);
+			}
+			printWarn(`Skipping '${skill.name}' (generator produced invalid KG)`);
+			continue;
+		}
 		const outPath = join(skillDir, ".crp-kg.json");
 		writeFileSync(outPath, `${JSON.stringify(kg, null, 2)}\n`, "utf-8");
 		console.log(`[WRITTEN] ${outPath}`);
@@ -83,5 +99,30 @@ export function cmdKgValidate(path: string): number {
 		return 1;
 	}
 	printOk("KG is valid");
+	return 0;
+}
+
+export function cmdCrpKg(
+	query: string,
+	options: { json?: boolean } = {},
+): number {
+	if (options.json) {
+		const result = queryKgStructured(query);
+		console.log(
+			JSON.stringify(
+				{
+					topic: result.topic,
+					matched: result.matched,
+					truncated: result.truncated,
+					totalTokens: result.totalTokens,
+				},
+				null,
+				2,
+			),
+		);
+		return 0;
+	}
+	const result = queryKg(query);
+	console.log(result);
 	return 0;
 }

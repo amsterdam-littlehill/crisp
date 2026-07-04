@@ -1,5 +1,5 @@
 import { readFileSync } from "node:fs";
-import { printError, printOk, printWarn } from "../lib/cli/format";
+import { emitJson, printError, printOk, printWarn } from "../lib/cli/format";
 import { computeQualityScore, isProductionReady } from "../lib/quality/scorer";
 
 export function cmdCrpQuality(
@@ -11,9 +11,7 @@ export function cmdCrpQuality(
 		text = readFileSync(file, "utf-8");
 	} catch {
 		if (options.json) {
-			console.log(
-				JSON.stringify({ error: `File not found: ${file}` }, null, 2),
-			);
+			emitJson({ error: `File not found: ${file}` });
 			return 1;
 		}
 		printError("File not found", file, "Check the file path and try again.");
@@ -24,7 +22,7 @@ export function cmdCrpQuality(
 	const ready = isProductionReady(score);
 
 	if (options.json) {
-		console.log(JSON.stringify({ ...score, production_ready: ready }, null, 2));
+		emitJson({ ...score, production_ready: ready });
 		return 0;
 	}
 

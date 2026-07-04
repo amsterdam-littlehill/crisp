@@ -1,4 +1,4 @@
-import { printError, printOk, printWarn } from "../lib/cli/format";
+import { emitJson, printError, printOk, printWarn } from "../lib/cli/format";
 import { runCrpAudit } from "../lib/crp/audit";
 
 export interface AuditOptions {
@@ -8,7 +8,7 @@ export interface AuditOptions {
 export function cmdCrpAudit(options: AuditOptions = {}): number {
 	const result = runCrpAudit();
 	if (options.json) {
-		console.log(JSON.stringify(result, null, 2));
+		emitJson(result);
 		return 0;
 	}
 	console.log("== CRP Audit ==\n");

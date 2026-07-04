@@ -1,26 +1,16 @@
 import { describe, expect, test } from "bun:test";
-import {
-	existsSync,
-	mkdirSync,
-	mkdtempSync,
-	readFileSync,
-	rmSync,
-	writeFileSync,
-} from "node:fs";
+import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import {
 	extractDependencyMarkers,
-	extractHotCache,
-	extractHotCacheFromDir,
 	extractSummary,
 	extractTagMarkers,
-	generateHotCacheFile,
 } from "../../src/lib/kg/extractor";
-import { generateKnowledgeGraph, runKgSync } from "../../src/lib/kg/generator";
-import type { KnowledgeGraph } from "../../src/lib/kg/validator";
-import { validateKg } from "../../src/lib/kg/validator";
-import type { CrpManifest } from "../../src/lib/manifest/types";
+import { generateKnowledgeGraph } from "../../src/lib/kg/generator";
+import type { KnowledgeGraph } from "../../src/lib/kg/schema";
+import { validateKg } from "../../src/lib/kg/schema";
+import type { CrpManifest } from "../../src/lib/manifest/io";
 
 describe("extractSummary", () => {
 	test("extracts @summary comment", () => {
@@ -41,91 +31,6 @@ describe("extractSummary", () => {
 	test("respects maxLines", () => {
 		const content = "Line one.\nLine two.\nLine three.\nLine four.\n";
 		expect(extractSummary(content, 2)).toBe("Line one. Line two.");
-	});
-});
-
-describe("extractHotCache", () => {
-	test("returns empty for missing file", () => {
-		expect(extractHotCache("/nonexistent/SKILL.md")).toBe("");
-	});
-
-	test("extracts content before @hot-cache-end", () => {
-		const dir = mkdtempSync(join(tmpdir(), "crisp-kg-"));
-		const content =
-			"---\ndesc: Test\n---\n\nLine one.\nLine two.\n<!-- @hot-cache-end -->\nHidden.\n";
-		writeFileSync(join(dir, "SKILL.md"), content);
-		try {
-			const cache = extractHotCache(join(dir, "SKILL.md"));
-			expect(cache).toContain("Line one.");
-			expect(cache).toContain("Line two.");
-			expect(cache).not.toContain("Hidden");
-		} finally {
-			rmSync(dir, { recursive: true, force: true });
-		}
-	});
-
-	test("respects maxLines", () => {
-		const dir = mkdtempSync(join(tmpdir(), "crisp-kg-"));
-		const lines = Array.from({ length: 100 }, (_, i) => `Line ${i + 1}`);
-		const content = `---\ndesc: Test\n---\n\n${lines.join("\n")}\n`;
-		writeFileSync(join(dir, "SKILL.md"), content);
-		try {
-			const cache = extractHotCache(join(dir, "SKILL.md"), 10);
-			const cacheLines = cache.split("\n");
-			expect(cacheLines.length).toBeLessThanOrEqual(10);
-		} finally {
-			rmSync(dir, { recursive: true, force: true });
-		}
-	});
-});
-
-describe("extractHotCacheFromDir", () => {
-	test("returns empty for missing directory", () => {
-		const result = extractHotCacheFromDir("/nonexistent");
-		expect(result).toEqual([]);
-	});
-
-	test("extracts from SKILL.md and tagged files", () => {
-		const dir = mkdtempSync(join(tmpdir(), "crisp-kg-"));
-		writeFileSync(join(dir, "SKILL.md"), "# Skill\n\nCache line.\n");
-		writeFileSync(join(dir, "doc.md"), "<!-- @hot-cache -->\nFile cache.\n");
-		try {
-			const caches = extractHotCacheFromDir(dir);
-			expect(caches.length).toBe(2);
-			expect(caches[0]).toContain("Cache line.");
-			expect(caches[1]).toContain("File cache.");
-		} finally {
-			rmSync(dir, { recursive: true, force: true });
-		}
-	});
-
-	test("ignores files without hot-cache marker", () => {
-		const dir = mkdtempSync(join(tmpdir(), "crisp-kg-"));
-		writeFileSync(join(dir, "SKILL.md"), "# Skill\n\nCache.\n");
-		writeFileSync(join(dir, "other.md"), "No marker here.\n");
-		try {
-			const caches = extractHotCacheFromDir(dir);
-			expect(caches.length).toBe(1);
-		} finally {
-			rmSync(dir, { recursive: true, force: true });
-		}
-	});
-});
-
-describe("generateHotCacheFile", () => {
-	test("creates _hot-cache.md", () => {
-		const dir = mkdtempSync(join(tmpdir(), "crisp-kg-"));
-		writeFileSync(join(dir, "SKILL.md"), "# Skill\n\nContent.\n");
-		try {
-			const path = generateHotCacheFile(dir, 50);
-			expect(existsSync(path)).toBe(true);
-			const content = readFileSync(path, "utf-8");
-			expect(content).toContain("@hot-cache");
-			expect(content).toContain("DO NOT EDIT");
-			rmSync(path, { force: true });
-		} finally {
-			rmSync(dir, { recursive: true, force: true });
-		}
 	});
 });
 
@@ -276,6 +181,23 @@ describe("validateKg", () => {
 			"edges[0] 'to' references nonexistent node: missing",
 		);
 	});
+
+	test("flags unknown edge type", () => {
+		const kg: KnowledgeGraph = {
+			project: "test",
+			generated_at: "2024-01-01T00:00:00Z",
+			nodes: {
+				files: [],
+				task_types: [],
+				tags: [{ id: "t1", name: "t", category: "c" }],
+			},
+			edges: [{ from: "t1", to: "t1", type: "BOGUS" }],
+		};
+		const errors = validateKg(kg);
+		expect(errors).toContain("edges[0] unknown edge type: BOGUS");
+		// from/to resolve to the tag node, so no nonexistent-node noise.
+		expect(errors.every((e) => !e.includes("nonexistent"))).toBe(true);
+	});
 });
 
 describe("generateKnowledgeGraph", () => {
@@ -359,16 +281,49 @@ describe("generateKnowledgeGraph", () => {
 			rmSync(dir, { recursive: true, force: true });
 		}
 	});
-});
 
-describe("runKgSync", () => {
-	test("returns 0 and warns for missing skill directory", () => {
-		const manifest = {
-			project: { name: "test" },
-			skills: [{ name: "missing" }],
-		} as CrpManifest;
-		const result = runKgSync("missing", ".claude/skills", manifest);
-		// Missing directories are skipped with a warning, not a hard failure
-		expect(result).toBe(0);
+	test("drops Common Tasks REQUIRES edges to missing files", () => {
+		const dir = mkdtempSync(join(tmpdir(), "crisp-kg-"));
+		writeFileSync(
+			join(dir, "SKILL.md"),
+			[
+				"# Backend",
+				"",
+				"## Common Tasks",
+				"| Task | Must read | Workflow |",
+				"|------|-----------|----------|",
+				"| API | rules/api.md | workflows/missing.md |",
+				"",
+			].join("\n"),
+		);
+		mkdirSync(join(dir, "rules"), { recursive: true });
+		writeFileSync(join(dir, "rules", "api.md"), "API design patterns.\n");
+		try {
+			const manifest = { project: { name: "test" }, skills: [] } as CrpManifest;
+			const kg = generateKnowledgeGraph(dir, manifest);
+			// The resolving ref survives; the missing-file ref is filtered out.
+			expect(kg.edges.some((e) => e.to === "rules/api")).toBe(true);
+			expect(kg.edges.some((e) => e.to === "workflows/missing")).toBe(false);
+			// And the resulting graph passes its own validator.
+			expect(validateKg(kg)).toEqual([]);
+		} finally {
+			rmSync(dir, { recursive: true, force: true });
+		}
+	});
+
+	test("drops DEPENDS_ON edges to missing files", () => {
+		const dir = mkdtempSync(join(tmpdir(), "crisp-kg-"));
+		writeFileSync(
+			join(dir, "SKILL.md"),
+			"# Backend\n\n<!-- @depends-on: rules/missing hard -->\n",
+		);
+		try {
+			const manifest = { project: { name: "test" }, skills: [] } as CrpManifest;
+			const kg = generateKnowledgeGraph(dir, manifest);
+			expect(kg.edges.some((e) => e.to === "rules/missing")).toBe(false);
+			expect(validateKg(kg)).toEqual([]);
+		} finally {
+			rmSync(dir, { recursive: true, force: true });
+		}
 	});
 });

@@ -2,10 +2,12 @@ import { describe, expect, test } from "bun:test";
 import { mkdir, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { defaultManifest } from "../../src/lib/manifest/defaults";
-import { extractSkillFrontmatter } from "../../src/lib/manifest/frontmatter";
-import { loadManifest, saveManifest } from "../../src/lib/manifest/io";
-import type { CrpManifest } from "../../src/lib/manifest/types";
+import type { CrpManifest } from "../../src/lib/manifest/io";
+import {
+	defaultManifest,
+	loadManifest,
+	saveManifest,
+} from "../../src/lib/manifest/io";
 import { validateManifest } from "../../src/lib/manifest/validate";
 
 describe("loadManifest", () => {
@@ -132,45 +134,6 @@ describe("validateManifest KG config", () => {
 		};
 		const errors = validateManifest(data);
 		expect(errors.some((e) => e.includes("max_tokens_execution"))).toBe(true);
-	});
-});
-
-describe("extractSkillFrontmatter", () => {
-	test("extracts name and description", async () => {
-		const dir = join(tmpdir(), `crisp-test-${Date.now()}`);
-		await mkdir(dir, { recursive: true });
-		const skillDir = join(dir, "backend");
-		await mkdir(skillDir, { recursive: true });
-		const frontmatter =
-			"---\nname: backend\ndescription: API work\nprimary: true\n---\n\n# Content";
-		await writeFile(join(skillDir, "SKILL.md"), frontmatter);
-		try {
-			const result = extractSkillFrontmatter(skillDir);
-			expect(result.name).toBe("backend");
-			expect(result.description).toBe("API work");
-			expect(result.primary).toBe(true);
-		} finally {
-			await rm(dir, { recursive: true, force: true });
-		}
-	});
-
-	test("missing file returns empty", () => {
-		const result = extractSkillFrontmatter("/nonexistent/skill");
-		expect(result).toEqual({});
-	});
-
-	test("no frontmatter returns empty", async () => {
-		const dir = join(tmpdir(), `crisp-test-${Date.now()}`);
-		await mkdir(dir, { recursive: true });
-		const skillDir = join(dir, "skill");
-		await mkdir(skillDir, { recursive: true });
-		await writeFile(join(skillDir, "SKILL.md"), "# No frontmatter\n");
-		try {
-			const result = extractSkillFrontmatter(skillDir);
-			expect(result).toEqual({});
-		} finally {
-			await rm(dir, { recursive: true, force: true });
-		}
 	});
 });
 

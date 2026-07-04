@@ -1,6 +1,10 @@
-import { estimateTokens, freeEncoder } from "../tokens";
+import { DEFAULT_SESSION_INJECT_TOKENS } from "../manifest/io";
+import { estimateTokens } from "../tokens";
 
-export { estimateTokens, freeEncoder };
+// CRP injection-block delimiters. Shared by the entry-file writers
+// (claude-md.ts, codex-instructions.ts) so the marker convention has one source.
+export const CRP_INJECT_MARKER_START = "<!-- CRP_INJECT_START -->";
+export const CRP_INJECT_MARKER_END = "<!-- CRP_INJECT_END -->";
 
 export interface RouteSkill {
 	name: string;
@@ -34,7 +38,7 @@ interface SkillItem {
 
 export function buildInjection(
 	routes: Routes,
-	maxTokens: number = 300,
+	maxTokens: number = DEFAULT_SESSION_INJECT_TOKENS,
 ): InjectionResult {
 	const droppedSkills: string[] = [];
 	let truncated = false;

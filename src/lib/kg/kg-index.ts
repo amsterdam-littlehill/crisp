@@ -6,9 +6,9 @@ import {
 	writeFileSync,
 } from "node:fs";
 import { dirname, join } from "node:path";
-import type { KnowledgeGraph } from "../kg/validator";
 import { loadManifest, manifestPath } from "../manifest/io";
-import { estimateTokens } from "./injection";
+import { estimateTokens } from "../tokens";
+import type { KnowledgeGraph } from "./schema";
 
 export interface KgChunk {
 	id: string;
