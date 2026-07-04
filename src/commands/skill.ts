@@ -13,6 +13,8 @@ import { loadManifest, manifestPath, saveManifest } from "../lib/manifest/io";
 import type { CrpManifest } from "../lib/manifest/types";
 import { copySkillTemplate } from "../lib/templates/copy";
 
+export { cmdSkillCheck } from "./skill-check";
+
 function validateSkillName(name: string): string {
 	if (!name) throw new Error("Skill name cannot be empty");
 	if (/[./\\]/.test(name)) throw new Error(`Invalid skill name: ${name}`);
