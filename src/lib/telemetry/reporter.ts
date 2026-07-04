@@ -1,5 +1,6 @@
 import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
+import { extractSkillName } from "../crp/analyzer";
 import { loadManifest, manifestPath } from "../manifest/io";
 
 export function deriveSkipEvents(
@@ -110,6 +111,11 @@ function loadReportReadEvents(): Array<Record<string, unknown>> {
 
 export interface ReportSummary {
 	windowDays: number;
+	// Reads of skill-definition files only (paths matching <name>.skill.md or
+	// skills/<name>/SKILL.md — the canonical CRP skill-file naming, shared with
+	// analyzer.ts/findSkillPath). Non-skill reads are excluded; totalReads
+	// covers all reads. reads.jsonl carries no `skill` field, so the bucket is
+	// derived from each event's `file` path.
 	bySkill: Array<{ name: string; reads: number; tokens: number }>;
 	totalReads: number;
 	// Parity fields with runReport's human output:
@@ -132,7 +138,12 @@ export function buildReportSummary(
 
 	const bySkillMap = new Map<string, { reads: number; tokens: number }>();
 	for (const e of readEvents) {
-		const skill = (e.skill as string) || "unknown";
+		// reads.jsonl records {ts, session_id, file, tokens} — no `skill`.
+		// Derive skill from the file path via the canonical naming convention
+		// (same regex as analyzer.ts/findSkillPath). Non-skill reads are
+		// skipped so bySkill reflects actual skill-file reads, not "unknown".
+		const skill = extractSkillName((e.file as string) || "");
+		if (!skill) continue;
 		const tokens = (e.tokens as number) || 0;
 		const entry = bySkillMap.get(skill) || { reads: 0, tokens: 0 };
 		entry.reads += 1;
