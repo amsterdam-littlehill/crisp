@@ -54,8 +54,8 @@ CRP 为 **Claude Code**（CLI、桌面端和 IDE 插件）提供原生集成。�
    - Markdown 标记（`<!-- CRP_INJECT_START/END -->`），以便再次运行 `crp sync` 时仅更新注入区域
 
 2. **Hook 注入** — `crp init` 会自动检测你使用的是 Claude Code CLI 还是 Claude Desktop，并写入对应的 hook 格式：
-   - **Claude Code CLI**：`settings.json` 中的嵌套 `hooks` 数组
-   - **Claude Desktop**：`settings.local.json` 中的扁平 `hooks` 对象
+   - **Claude Code CLI**：`settings.local.json` 中的嵌套 `hooks` 数组
+   - **Claude Desktop**：`settings.json` 中的嵌套 `hooks` 数组
 
 3. **遥测** — Claude Code 中每次 `Read` 工具调用都会触发 hook，记录：
    - 时间戳、会话 ID、文件路径与 token 估算
