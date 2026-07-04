@@ -1,0 +1,13 @@
+# Normalize all text files to LF on checkout and commit.
+# Overrides core.autocrlf (Windows) so the working tree matches what biome expects.
+* text=auto eol=lf
+
+# Binary assets — never touch line endings
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary
+*.webp binary
+*.woff binary
+*.woff2 binary

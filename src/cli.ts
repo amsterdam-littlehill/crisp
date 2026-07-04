@@ -17,10 +17,7 @@ import {
 	cmdSkillList,
 } from "./commands/skill";
 import { cmdStatus } from "./commands/status";
-import {
-	cmdTelemetryReport,
-	cmdTelemetryStatus,
-} from "./commands/telemetry";
+import { cmdTelemetryReport, cmdTelemetryStatus } from "./commands/telemetry";
 import { cmdValidate } from "./commands/validate";
 
 const program = new Command();
@@ -132,7 +129,9 @@ skillCmd
 
 skillCmd
 	.command("check <name>")
-	.description("Validate a skill against the SkillSpec (replaces smoke-test.sh)")
+	.description(
+		"Validate a skill against the SkillSpec (replaces smoke-test.sh)",
+	)
 	.action(
 		runAction((opts, [name]) => cmdSkillCheck(name, { json: opts.json })),
 	);
